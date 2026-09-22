@@ -1,0 +1,6 @@
+body, html, #root { height: 100%; margin: 0; font-family: Roboto, sans-serif; }
+.wood-bg {
+  background-image: linear-gradient(180deg,#efe7d6 0%, #d9e7d9 100%);
+  min-height:100%; padding-bottom:40px;
+}
+.card-wood { background: linear-gradient(90deg,#fffaf0,#f4efe6); border-radius:8px }
