@@ -3,6 +3,6 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go env -w GOPROXY=https://proxy.golang.org
 COPY . .
-RUN go build -o nombresmad ./
+RUN go build -o /usr/local/bin/nombresmad ./
 EXPOSE 8080
-CMD ["/app/nombresmad"]
+CMD ["/usr/local/bin/nombresmad"]

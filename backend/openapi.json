@@ -1,0 +1,211 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "NombresMad API",
+    "description": "API for wooden name plates stored in Postgres.",
+    "version": "1.0.0"
+  },
+  "basePath": "/",
+  "consumes": ["application/json"],
+  "produces": ["application/json"],
+  "tags": [
+    {"name": "items", "description": "Name plate records"},
+    {"name": "admin", "description": "Database setup"}
+  ],
+  "paths": {
+    "/api/items": {
+      "get": {
+        "tags": ["items"],
+        "summary": "List items",
+        "description": "Returns one page of items. Page size is fixed at 25. Filters and sort run in the database.",
+        "produces": ["application/json"],
+        "parameters": [
+          {"name": "page", "in": "query", "type": "integer", "default": 1, "description": "Page number, starting at 1"},
+          {"name": "sort", "in": "query", "type": "string", "default": "id", "enum": ["id", "dateCreated", "text", "size", "thicknesses", "woodType", "deliveryDate", "deliveredTo", "group", "price", "deliveredWithBox"]},
+          {"name": "order", "in": "query", "type": "string", "default": "asc", "enum": ["asc", "desc"]},
+          {"name": "q", "in": "query", "type": "string", "description": "Case-insensitive match on name, group, wood, recipient, size, or thickness"},
+          {"name": "group", "in": "query", "type": "string", "description": "Case-insensitive match on group"},
+          {"name": "woodType", "in": "query", "type": "string", "description": "Exact wood type"},
+          {"name": "delivered", "in": "query", "type": "boolean", "description": "True when Entregado a is filled in. False when that field is empty."},
+          {"name": "deliveredWithBox", "in": "query", "type": "boolean", "description": "Filter by box delivery"}
+        ],
+        "responses": {
+          "200": {"description": "One page of items", "schema": {"$ref": "#/definitions/ItemPage"}},
+          "400": {"description": "Invalid page, sort, order, or filter", "schema": {"type": "string"}},
+          "500": {"description": "Database error", "schema": {"type": "string"}}
+        }
+      },
+      "post": {
+        "tags": ["items"],
+        "summary": "Create an item",
+        "description": "Inserts an item. The server assigns id.",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {"$ref": "#/definitions/ItemInput"}
+          }
+        ],
+        "responses": {
+          "200": {"description": "Created item", "schema": {"$ref": "#/definitions/Item"}},
+          "400": {"description": "Invalid JSON", "schema": {"type": "string"}},
+          "500": {"description": "Database error", "schema": {"type": "string"}}
+        }
+      }
+    },
+    "/api/items/{id}": {
+      "get": {
+        "tags": ["items"],
+        "summary": "Get an item",
+        "produces": ["application/json"],
+        "parameters": [{"$ref": "#/parameters/itemId"}],
+        "responses": {
+          "200": {"description": "The item", "schema": {"$ref": "#/definitions/Item"}},
+          "400": {"description": "Missing or invalid id", "schema": {"type": "string"}},
+          "404": {"description": "Not found", "schema": {"type": "string"}},
+          "500": {"description": "Database error", "schema": {"type": "string"}}
+        }
+      },
+      "put": {
+        "tags": ["items"],
+        "summary": "Update an item",
+        "description": "Replaces the fields of the item identified by the path id.",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {"$ref": "#/parameters/itemId"},
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {"$ref": "#/definitions/ItemInput"}
+          }
+        ],
+        "responses": {
+          "200": {"description": "Updated item", "schema": {"$ref": "#/definitions/Item"}},
+          "404": {"description": "Not found", "schema": {"type": "string"}},
+          "400": {"description": "Missing, invalid id, or invalid JSON", "schema": {"type": "string"}},
+          "500": {"description": "Database error", "schema": {"type": "string"}}
+        }
+      },
+      "delete": {
+        "tags": ["items"],
+        "summary": "Delete an item",
+        "produces": ["application/json"],
+        "parameters": [{"$ref": "#/parameters/itemId"}],
+        "responses": {
+          "200": {"description": "Deleted", "schema": {"$ref": "#/definitions/Status"}},
+          "404": {"description": "Not found", "schema": {"type": "string"}},
+          "400": {"description": "Missing or invalid id", "schema": {"type": "string"}},
+          "500": {"description": "Database error", "schema": {"type": "string"}}
+        }
+      }
+    },
+    "/api/options": {
+      "get": {
+        "tags": ["items"],
+        "summary": "List filter choices",
+        "description": "Distinct wood types and groups currently stored.",
+        "produces": ["application/json"],
+        "responses": {
+          "200": {"description": "Filter choices", "schema": {"$ref": "#/definitions/Options"}},
+          "500": {"description": "Database error", "schema": {"type": "string"}}
+        }
+      }
+    },
+    "/api/import": {
+      "post": {
+        "tags": ["admin"],
+        "summary": "Reload items from NoMad.json",
+        "description": "Replaces every row in items with the contents of NoMad.json. Startup already loads that file when the table is empty.",
+        "produces": ["application/json"],
+        "responses": {
+          "200": {"description": "Imported", "schema": {"$ref": "#/definitions/Status"}},
+          "405": {"description": "Method not allowed", "schema": {"type": "string"}},
+          "500": {"description": "Read or database error", "schema": {"type": "string"}}
+        }
+      }
+    },
+    "/api/migrate": {
+      "post": {
+        "tags": ["admin"],
+        "summary": "Apply migrations.sql",
+        "description": "Runs migrations.sql. Startup already applies it.",
+        "produces": ["application/json"],
+        "responses": {
+          "200": {"description": "Migrated", "schema": {"$ref": "#/definitions/Status"}},
+          "405": {"description": "Method not allowed", "schema": {"type": "string"}},
+          "500": {"description": "Migration error", "schema": {"type": "string"}}
+        }
+      }
+    }
+  },
+  "parameters": {
+    "itemId": {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "type": "integer",
+      "description": "Item id"
+    }
+  },
+  "definitions": {
+    "Item": {
+      "type": "object",
+      "properties": {
+        "id": {"type": "integer", "example": 1},
+        "dateCreated": {"type": "string", "example": "15/09/1999"},
+        "text": {"type": "string", "example": "LAURA"},
+        "size": {"type": "string", "example": "5"},
+        "thicknesses": {"type": "string", "example": "20"},
+        "woodType": {"type": "string", "example": "TECA"},
+        "deliveryDate": {"type": "string", "example": "15/09/1999"},
+        "deliveredTo": {"type": "string", "example": "LAURA-AGUSTIN"},
+        "group": {"type": "string", "example": "CRUCI"},
+        "price": {"type": "integer", "example": 0},
+        "deliveredWithBox": {"type": "boolean", "example": false}
+      }
+    },
+    "ItemInput": {
+      "type": "object",
+      "properties": {
+        "dateCreated": {"type": "string"},
+        "text": {"type": "string"},
+        "size": {"type": "string"},
+        "thicknesses": {"type": "string"},
+        "woodType": {"type": "string"},
+        "deliveryDate": {"type": "string"},
+        "deliveredTo": {"type": "string"},
+        "group": {"type": "string"},
+        "price": {"type": "integer"},
+        "deliveredWithBox": {"type": "boolean"}
+      }
+    },
+    "ItemPage": {
+      "type": "object",
+      "properties": {
+        "items": {"type": "array", "items": {"$ref": "#/definitions/Item"}},
+        "page": {"type": "integer", "example": 1},
+        "pageSize": {"type": "integer", "example": 25},
+        "total": {"type": "integer", "example": 1914},
+        "totalPages": {"type": "integer", "example": 77}
+      }
+    },
+    "Options": {
+      "type": "object",
+      "properties": {
+        "woodTypes": {"type": "array", "items": {"type": "string"}},
+        "groups": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "status": {"type": "string", "example": "imported"}
+      }
+    }
+  }
+}
