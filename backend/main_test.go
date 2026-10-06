@@ -31,6 +31,9 @@ func TestParseListQueryRejectsBadInput(t *testing.T) {
 		{"page": {"abc"}},
 		{"deliveredWithBox": {"yes"}},
 		{"delivered": {"maybe"}},
+		{"hasPicture": {"yes"}},
+		{"pageSize": {"0"}},
+		{"pageSize": {"61"}},
 	}
 	for _, values := range cases {
 		if _, err := parseListQuery(values); err == nil {
@@ -89,5 +92,29 @@ func TestParseListQueryDelivered(t *testing.T) {
 	}
 	if !strings.Contains(empty.WhereSQL, "deliveredTo, '')) = ''") {
 		t.Fatalf("empty where=%s", empty.WhereSQL)
+	}
+}
+
+func TestParseListQueryGalleryFilters(t *testing.T) {
+	lq, err := parseListQuery(url.Values{
+		"name":       {"maría"},
+		"size":       {"5"},
+		"woodType":   {"TECA"},
+		"hasPicture": {"true"},
+		"pageSize":   {"24"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if lq.PageSize != 24 {
+		t.Fatalf("pageSize=%d", lq.PageSize)
+	}
+	if len(lq.Args) != 3 || lq.Args[0] != "%maría%" || lq.Args[1] != "5" || lq.Args[2] != "TECA" {
+		t.Fatalf("args=%v", lq.Args)
+	}
+	for _, part := range []string{`COALESCE(text, '') ILIKE $1`, `COALESCE(size, '') = $2`, `woodType = $3`, `COALESCE(picture, '') <> ''`} {
+		if !strings.Contains(lq.WhereSQL, part) {
+			t.Fatalf("missing %s in %s", part, lq.WhereSQL)
+		}
 	}
 }

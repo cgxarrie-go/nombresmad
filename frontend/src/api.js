@@ -10,9 +10,15 @@ export async function fetchItems(query) {
     sort: query.sort,
     order: query.order,
   }
+  if (query.pageSize) params.pageSize = query.pageSize
   if (query.q) params.q = query.q
+  if (query.name) params.name = query.name
+  if (query.size) params.size = query.size
   if (query.group) params.group = query.group
   if (query.woodType) params.woodType = query.woodType
+  if (query.hasPicture === 'true' || query.hasPicture === 'false') {
+    params.hasPicture = query.hasPicture
+  }
   if (query.delivered === 'true' || query.delivered === 'false') {
     params.delivered = query.delivered
   }
@@ -34,6 +40,7 @@ export async function fetchOptions() {
   return {
     woodTypes: data.woodTypes || [],
     groups: data.groups || [],
+    sizes: data.sizes || [],
   }
 }
 

@@ -37,6 +37,7 @@ import SearchIcon from '@mui/icons-material/Search'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import InputAdornment from '@mui/material/InputAdornment'
 import ItemDialog, { emptyItem } from './ItemDialog'
+import { navigate } from './route'
 import {
   PAGE_SIZE,
   createItem,
@@ -306,6 +307,7 @@ export default function App() {
             </Typography>
           </Box>
           <Stack direction="row" spacing={1}>
+            <Button variant="outlined" onClick={() => navigate('/galeria')}>Galería</Button>
             <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>Nuevo</Button>
             <Button variant="outlined" onClick={(event) => setMenuAnchor(event.currentTarget)}>Mantenimiento</Button>
           </Stack>

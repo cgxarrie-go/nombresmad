@@ -2,6 +2,8 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { CssBaseline, ThemeProvider, createTheme } from '@mui/material'
 import App from './App'
+import Gallery from './Gallery'
+import { usePath } from './route'
 import './theme.css'
 
 const theme = createTheme({
@@ -34,10 +36,15 @@ const theme = createTheme({
   },
 })
 
+function Root() {
+  const path = usePath()
+  return path === '/galeria' ? <Gallery /> : <App />
+}
+
 const root = createRoot(document.getElementById('root'))
 root.render(
   <ThemeProvider theme={theme}>
     <CssBaseline />
-    <App />
+    <Root />
   </ThemeProvider>
 )

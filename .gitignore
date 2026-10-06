@@ -30,6 +30,8 @@ go.work.sum
 # Uploaded item pictures
 backend/pictures/
 
+frontend/node_modules/
+
 # Editor/IDE
 # .idea/
 # .vscode/

@@ -144,6 +144,13 @@ func parseListQuery(values url.Values) (listQuery, error) {
 		}
 		lq.Page = n
 	}
+	if raw := values.Get("pageSize"); raw != "" {
+		n, err := strconv.Atoi(raw)
+		if err != nil || n < 1 || n > 60 {
+			return lq, fmt.Errorf("invalid pageSize")
+		}
+		lq.PageSize = n
+	}
 	sortKey := values.Get("sort")
 	if sortKey == "" {
 		sortKey = "id"
@@ -186,9 +193,26 @@ func parseListQuery(values url.Values) (listQuery, error) {
 		lq.Args = append(lq.Args, likePattern(s))
 		where = append(where, fmt.Sprintf(`COALESCE("group", '') ILIKE $%d ESCAPE '\'`, len(lq.Args)))
 	}
+	if s := strings.TrimSpace(values.Get("name")); s != "" {
+		lq.Args = append(lq.Args, likePattern(s))
+		where = append(where, fmt.Sprintf(`COALESCE(text, '') ILIKE $%d ESCAPE '\'`, len(lq.Args)))
+	}
+	if s := strings.TrimSpace(values.Get("size")); s != "" {
+		lq.Args = append(lq.Args, s)
+		where = append(where, fmt.Sprintf(`COALESCE(size, '') = $%d`, len(lq.Args)))
+	}
 	if s := strings.TrimSpace(values.Get("woodType")); s != "" {
 		lq.Args = append(lq.Args, s)
 		where = append(where, fmt.Sprintf(`woodType = $%d`, len(lq.Args)))
+	}
+	switch values.Get("hasPicture") {
+	case "":
+	case "true":
+		where = append(where, `COALESCE(picture, '') <> ''`)
+	case "false":
+		where = append(where, `COALESCE(picture, '') = ''`)
+	default:
+		return lq, fmt.Errorf("invalid hasPicture")
 	}
 	switch values.Get("delivered") {
 	case "":
@@ -282,7 +306,12 @@ func optionsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	writeJSON(w, map[string][]string{"woodTypes": woodTypes, "groups": groups})
+	sizes, err := distinctValues(`SELECT size FROM items WHERE COALESCE(size, '') <> '' GROUP BY size ORDER BY CASE WHEN size ~ '^[0-9]+([.][0-9]+)?$' THEN size::numeric END NULLS LAST, size`)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, map[string][]string{"woodTypes": woodTypes, "groups": groups, "sizes": sizes})
 }
 
 func distinctValues(query string) ([]string, error) {

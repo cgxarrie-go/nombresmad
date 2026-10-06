@@ -17,15 +17,19 @@
       "get": {
         "tags": ["items"],
         "summary": "List items",
-        "description": "Returns one page of items. Page size is fixed at 25. Filters and sort run in the database.",
+        "description": "Returns one page of items. Page size defaults to 25 and can be raised up to 60. Filters and sort run in the database.",
         "produces": ["application/json"],
         "parameters": [
           {"name": "page", "in": "query", "type": "integer", "default": 1, "description": "Page number, starting at 1"},
+          {"name": "pageSize", "in": "query", "type": "integer", "default": 25, "description": "Items per page, from 1 to 60"},
           {"name": "sort", "in": "query", "type": "string", "default": "id", "enum": ["id", "dateCreated", "text", "size", "thicknesses", "woodType", "deliveryDate", "deliveredTo", "group", "price", "deliveredWithBox"]},
           {"name": "order", "in": "query", "type": "string", "default": "asc", "enum": ["asc", "desc"]},
           {"name": "q", "in": "query", "type": "string", "description": "Case-insensitive match on name, group, wood, recipient, size, or thickness"},
           {"name": "group", "in": "query", "type": "string", "description": "Case-insensitive match on group"},
+          {"name": "name", "in": "query", "type": "string", "description": "Case-insensitive match on the name"},
+          {"name": "size", "in": "query", "type": "string", "description": "Exact size"},
           {"name": "woodType", "in": "query", "type": "string", "description": "Exact wood type"},
+          {"name": "hasPicture", "in": "query", "type": "boolean", "description": "True when the item has a picture"},
           {"name": "delivered", "in": "query", "type": "boolean", "description": "True when Entregado a is filled in. False when that field is empty."},
           {"name": "deliveredWithBox", "in": "query", "type": "boolean", "description": "Filter by box delivery"}
         ],
@@ -149,7 +153,7 @@
       "get": {
         "tags": ["items"],
         "summary": "List filter choices",
-        "description": "Distinct wood types and groups currently stored.",
+        "description": "Distinct wood types, groups, and sizes currently stored.",
         "produces": ["application/json"],
         "responses": {
           "200": {"description": "Filter choices", "schema": {"$ref": "#/definitions/Options"}},
@@ -240,7 +244,8 @@
       "type": "object",
       "properties": {
         "woodTypes": {"type": "array", "items": {"type": "string"}},
-        "groups": {"type": "array", "items": {"type": "string"}}
+        "groups": {"type": "array", "items": {"type": "string"}},
+        "sizes": {"type": "array", "items": {"type": "string"}}
       }
     },
     "Status": {
