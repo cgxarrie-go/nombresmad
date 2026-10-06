@@ -307,7 +307,7 @@ export default function App() {
             </Typography>
           </Box>
           <Stack direction="row" spacing={1}>
-            <Button variant="outlined" onClick={() => navigate('/galeria')}>Galería</Button>
+            <Button variant="outlined" onClick={() => navigate('/')}>Galería</Button>
             <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>Nuevo</Button>
             <Button variant="outlined" onClick={(event) => setMenuAnchor(event.currentTarget)}>Mantenimiento</Button>
           </Stack>

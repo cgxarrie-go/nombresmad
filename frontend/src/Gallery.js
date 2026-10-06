@@ -11,7 +11,9 @@ import {
   Paper,
   TablePagination,
   TextField,
+  ThemeProvider,
   Typography,
+  createTheme,
 } from '@mui/material'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
@@ -19,6 +21,24 @@ import CloseIcon from '@mui/icons-material/Close'
 import FilterAltOffIcon from '@mui/icons-material/FilterAltOff'
 import { errorMessage, fetchItems, fetchOptions, pictureSrc } from './api'
 import { navigate } from './route'
+
+const galleryTheme = createTheme({
+  palette: {
+    mode: 'dark',
+    primary: { main: '#c4a574', contrastText: '#000' },
+    background: { default: '#232423', paper: '#232423' },
+    text: { primary: '#f5f5f5', secondary: '#bdbdbd' },
+    divider: '#2a2a2a',
+  },
+  shape: { borderRadius: 10 },
+  typography: {
+    fontFamily: '"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+  },
+  components: {
+    MuiButton: { styleOverrides: { root: { textTransform: 'none', fontWeight: 600 } } },
+    MuiPaper: { styleOverrides: { root: { backgroundImage: 'none' } } },
+  },
+})
 
 const PAGE_SIZE = 24
 
@@ -81,6 +101,17 @@ export default function Gallery() {
       .catch(() => {})
   }, [])
 
+  useEffect(() => {
+    const body = document.body.style.backgroundColor
+    const root = document.documentElement.style.backgroundColor
+    document.body.style.backgroundColor = '#232423'
+    document.documentElement.style.backgroundColor = '#232423'
+    return () => {
+      document.body.style.backgroundColor = body
+      document.documentElement.style.backgroundColor = root
+    }
+  }, [])
+
   function setFilter(patch) {
     setActive(null)
     setQuery((prev) => ({ ...prev, ...patch, page: 1 }))
@@ -104,18 +135,40 @@ export default function Gallery() {
   }
 
   return (
-    <Box className="app-shell">
-      <Container maxWidth="lg" sx={{ py: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, alignItems: 'flex-end', flexWrap: 'wrap', mb: 2.5 }}>
-          <Box>
-            <Typography variant="h4" component="h1">Galería</Typography>
-            <Typography variant="body2" color="text.secondary">
-              {pageData.total.toLocaleString('es-ES')} {pageData.total === 1 ? 'foto' : 'fotos'}
-            </Typography>
+    <ThemeProvider theme={galleryTheme}>
+    <Box className="gallery-shell">
+      <Box sx={{ position: 'relative', overflow: 'hidden', minHeight: { xs: 300, md: 400 }, color: '#fffaf3' }}>
+        <Box
+          component="img"
+          src="/forest-banner.jpg"
+          alt="Bosque en blanco y negro con troncos apilados"
+          sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 42%' }}
+        />
+        <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(16, 22, 16, 0.78) 0%, rgba(16, 22, 16, 0.42) 46%, rgba(16, 22, 16, 0.12) 100%)' }} />
+        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1, minHeight: { xs: 300, md: 400 }, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', pb: { xs: 7, md: 9 }, pt: 4 }}>
+          <Typography sx={{ letterSpacing: '0.24em', textTransform: 'uppercase', fontSize: 12, fontWeight: 700, color: '#d5e6d4', mb: 1 }}>
+            Bosque · Madera
+          </Typography>
+          <Typography variant="h2" component="h1" sx={{ fontWeight: 700, letterSpacing: '-0.03em', fontSize: { xs: 40, md: 64 }, lineHeight: 1, mb: 1.5 }}>
+            NombresMad
+          </Typography>
+          <Typography sx={{ maxWidth: 460, color: 'rgba(255, 250, 243, 0.9)', mb: 2.5 }}>
+            Nombres tallados en madera.
+            {' '}
+            {pageData.total.toLocaleString('es-ES')} {pageData.total === 1 ? 'foto' : 'fotos'} en la galería.
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Button variant="contained" href="#galeria" sx={{ bgcolor: '#2f6b4f', '&:hover': { bgcolor: '#24563f' } }}>
+              Galería
+            </Button>
+            <Button variant="outlined" onClick={() => navigate('/lista')} sx={{ color: '#fffaf3', borderColor: 'rgba(255,250,243,0.75)', '&:hover': { borderColor: '#fffaf3', bgcolor: 'rgba(255,250,243,0.08)' } }}>
+              Lista
+            </Button>
           </Box>
-          <Button variant="outlined" onClick={() => navigate('/')}>Lista</Button>
-        </Box>
+        </Container>
+      </Box>
 
+      <Container id="galeria" maxWidth="lg" sx={{ mt: { xs: -4, md: -5 }, pb: 4, position: 'relative', zIndex: 1, scrollMarginTop: 16 }}>
         <Paper sx={{ p: 2, mb: 2 }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1.4fr 1fr 1fr' }, gap: 1.5 }}>
             <TextField
@@ -175,11 +228,11 @@ export default function Gallery() {
                     textAlign: 'left',
                     cursor: 'pointer',
                     border: '1px solid',
-                    borderColor: 'divider',
+                    borderColor: '#2a2a2a',
                     font: 'inherit',
                     color: 'inherit',
-                    backgroundColor: 'background.paper',
-                    '&:hover': { boxShadow: 4 },
+                    backgroundColor: '#232423',
+                    '&:hover': { borderColor: '#f5f5f5' },
                   }}
                 >
                   <Box
@@ -239,5 +292,6 @@ export default function Gallery() {
         ) : null}
       </Dialog>
     </Box>
+    </ThemeProvider>
   )
 }

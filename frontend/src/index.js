@@ -38,7 +38,7 @@ const theme = createTheme({
 
 function Root() {
   const path = usePath()
-  return path === '/galeria' ? <Gallery /> : <App />
+  return path === '/lista' ? <App /> : <Gallery />
 }
 
 const root = createRoot(document.getElementById('root'))
