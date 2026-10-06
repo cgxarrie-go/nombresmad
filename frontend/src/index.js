@@ -5,7 +5,7 @@ import App from './App'
 import Gallery from './Gallery'
 import Login from './Login'
 import { fetchSession, logout } from './api'
-import { usePath } from './route'
+import { navigate, usePath } from './route'
 import './theme.css'
 
 const theme = createTheme({
@@ -68,6 +68,7 @@ function AdminGate() {
       onLogout={async () => {
         try { await logout() } catch { /* the cookie is cleared locally anyway */ }
         setSession(null)
+        navigate('/')
       }}
     />
   )

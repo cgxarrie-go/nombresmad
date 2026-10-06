@@ -33,6 +33,7 @@ import AddIcon from '@mui/icons-material/Add'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import FilterAltOffIcon from '@mui/icons-material/FilterAltOff'
+import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined'
 import SearchIcon from '@mui/icons-material/Search'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import InputAdornment from '@mui/material/InputAdornment'
@@ -306,11 +307,19 @@ export default function App({ username, onLogout }) {
               {pageData.total > 0 ? ` · ${from}–${to}` : ''}
             </Typography>
           </Box>
-          <Stack direction="row" spacing={1}>
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
             <Button variant="outlined" onClick={() => navigate('/')}>Galería</Button>
-            <Button variant="text" onClick={onLogout}>{username ? `Salir (${username})` : 'Salir'}</Button>
             <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>Nuevo</Button>
             <Button variant="outlined" onClick={(event) => setMenuAnchor(event.currentTarget)}>Mantenimiento</Button>
+            <Tooltip title={username ? `Salir (${username})` : 'Salir'}>
+              <IconButton
+                aria-label={username ? `Salir (${username})` : 'Salir'}
+                onClick={onLogout}
+                sx={{ ml: 0.5 }}
+              >
+                <LogoutOutlinedIcon />
+              </IconButton>
+            </Tooltip>
           </Stack>
           <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={() => setMenuAnchor(null)}>
             <MenuItem onClick={runMigrate}>Actualizar base de datos</MenuItem>

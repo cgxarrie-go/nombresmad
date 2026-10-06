@@ -12,14 +12,17 @@ import {
   TablePagination,
   TextField,
   ThemeProvider,
+  Tooltip,
   Typography,
   createTheme,
 } from '@mui/material'
+import AdminPanelSettingsOutlinedIcon from '@mui/icons-material/AdminPanelSettingsOutlined'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import CloseIcon from '@mui/icons-material/Close'
 import FilterAltOffIcon from '@mui/icons-material/FilterAltOff'
-import { errorMessage, fetchItems, fetchOptions, pictureSrc } from './api'
+import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined'
+import { errorMessage, fetchItems, fetchOptions, fetchSession, logout, pictureSrc } from './api'
 import { navigate } from './route'
 
 const galleryTheme = createTheme({
@@ -42,6 +45,12 @@ const galleryTheme = createTheme({
 
 const PAGE_SIZE = 24
 
+const cornerIconSx = {
+  color: '#fffaf3',
+  bgcolor: 'rgba(0,0,0,0.35)',
+  '&:hover': { bgcolor: 'rgba(0,0,0,0.55)' },
+}
+
 const EMPTY_PAGE = { items: [], page: 1, pageSize: PAGE_SIZE, total: 0, totalPages: 0 }
 
 function caption(item) {
@@ -56,6 +65,7 @@ export default function Gallery() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [active, setActive] = useState(null)
+  const [session, setSession] = useState(undefined)
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -102,6 +112,19 @@ export default function Gallery() {
   }, [])
 
   useEffect(() => {
+    let activeRequest = true
+    fetchSession()
+      .then((data) => { if (activeRequest) setSession(data) })
+      .catch(() => { if (activeRequest) setSession(null) })
+    return () => { activeRequest = false }
+  }, [])
+
+  async function signOut() {
+    try { await logout() } catch { /* the cookie is cleared locally anyway */ }
+    setSession(null)
+  }
+
+  useEffect(() => {
     const body = document.body.style.backgroundColor
     const root = document.documentElement.style.backgroundColor
     document.body.style.backgroundColor = '#232423'
@@ -137,7 +160,7 @@ export default function Gallery() {
   return (
     <ThemeProvider theme={galleryTheme}>
     <Box className="gallery-shell">
-      <Box sx={{ position: 'relative', overflow: 'hidden', minHeight: { xs: 300, md: 400 }, color: '#fffaf3' }}>
+      <Box sx={{ position: 'relative', overflow: 'hidden', minHeight: { xs: 240, md: 320 }, color: '#fffaf3' }}>
         <Box
           component="img"
           src="/forest-banner.jpg"
@@ -145,27 +168,36 @@ export default function Gallery() {
           sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 42%' }}
         />
         <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(16, 22, 16, 0.78) 0%, rgba(16, 22, 16, 0.42) 46%, rgba(16, 22, 16, 0.12) 100%)' }} />
-        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1, minHeight: { xs: 300, md: 400 }, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', pb: { xs: 7, md: 9 }, pt: 4 }}>
-          <Typography sx={{ letterSpacing: '0.24em', textTransform: 'uppercase', fontSize: 12, fontWeight: 700, color: '#d5e6d4', mb: 1 }}>
-            Bosque · Madera
-          </Typography>
+        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1, minHeight: { xs: 240, md: 320 }, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', pb: { xs: 7, md: 9 }, pt: 4 }}>
           <Typography variant="h2" component="h1" sx={{ fontWeight: 700, letterSpacing: '-0.03em', fontSize: { xs: 40, md: 64 }, lineHeight: 1, mb: 1.5 }}>
             NombresMad
           </Typography>
-          <Typography sx={{ maxWidth: 460, color: 'rgba(255, 250, 243, 0.9)', mb: 2.5 }}>
+          <Typography sx={{ maxWidth: 460, color: 'rgba(255, 250, 243, 0.9)' }}>
             Nombres tallados en madera.
             {' '}
             {pageData.total.toLocaleString('es-ES')} {pageData.total === 1 ? 'foto' : 'fotos'} en la galería.
           </Typography>
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            <Button variant="contained" href="#galeria" sx={{ bgcolor: '#2f6b4f', '&:hover': { bgcolor: '#24563f' } }}>
-              Galería
-            </Button>
-            <Button variant="outlined" onClick={() => navigate('/lista')} sx={{ color: '#fffaf3', borderColor: 'rgba(255,250,243,0.75)', '&:hover': { borderColor: '#fffaf3', bgcolor: 'rgba(255,250,243,0.08)' } }}>
-              Administración
-            </Button>
-          </Box>
         </Container>
+        {session !== undefined && (
+          <Box sx={{ position: 'absolute', top: 16, right: 16, zIndex: 2, display: 'flex', gap: 1 }}>
+            <Tooltip title="Administración">
+              <IconButton aria-label="Administración" onClick={() => navigate('/lista')} sx={cornerIconSx}>
+                <AdminPanelSettingsOutlinedIcon />
+              </IconButton>
+            </Tooltip>
+            {session && (
+              <Tooltip title={session.username ? `Salir (${session.username})` : 'Salir'}>
+                <IconButton
+                  aria-label={session.username ? `Salir (${session.username})` : 'Salir'}
+                  onClick={signOut}
+                  sx={cornerIconSx}
+                >
+                  <LogoutOutlinedIcon />
+                </IconButton>
+              </Tooltip>
+            )}
+          </Box>
+        )}
       </Box>
 
       <Container id="galeria" maxWidth="lg" sx={{ mt: { xs: -4, md: -5 }, pb: 4, position: 'relative', zIndex: 1, scrollMarginTop: 16 }}>
