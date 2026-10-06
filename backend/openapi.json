@@ -13,6 +13,53 @@
     {"name": "admin", "description": "Database setup"}
   ],
   "paths": {
+    "/api/login": {
+      "post": {
+        "tags": ["admin"],
+        "summary": "Log in",
+        "description": "Checks ADMIN_USER and ADMIN_PASSWORD and sets an HttpOnly session cookie for 12 hours.",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [{
+          "name": "body",
+          "in": "body",
+          "required": true,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "username": {"type": "string"},
+              "password": {"type": "string"}
+            }
+          }
+        }],
+        "responses": {
+          "200": {"description": "Logged in", "schema": {"type": "object", "properties": {"username": {"type": "string"}}}},
+          "401": {"description": "Wrong username or password", "schema": {"type": "string"}}
+        }
+      }
+    },
+    "/api/logout": {
+      "post": {
+        "tags": ["admin"],
+        "summary": "Log out",
+        "description": "Clears the session cookie.",
+        "produces": ["application/json"],
+        "responses": {
+          "200": {"description": "Logged out", "schema": {"$ref": "#/definitions/Status"}}
+        }
+      }
+    },
+    "/api/session": {
+      "get": {
+        "tags": ["admin"],
+        "summary": "Current session",
+        "produces": ["application/json"],
+        "responses": {
+          "200": {"description": "Logged in", "schema": {"type": "object", "properties": {"username": {"type": "string"}}}},
+          "401": {"description": "Not logged in", "schema": {"type": "string"}}
+        }
+      }
+    },
     "/api/items": {
       "get": {
         "tags": ["items"],

@@ -76,7 +76,7 @@ function cellText(item, column) {
   return value === '' || value == null ? '—' : value
 }
 
-export default function App() {
+export default function App({ username, onLogout }) {
   const [query, setQuery] = useState({
     page: 1,
     sort: 'id',
@@ -308,6 +308,7 @@ export default function App() {
           </Box>
           <Stack direction="row" spacing={1}>
             <Button variant="outlined" onClick={() => navigate('/')}>Galería</Button>
+            <Button variant="text" onClick={onLogout}>{username ? `Salir (${username})` : 'Salir'}</Button>
             <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>Nuevo</Button>
             <Button variant="outlined" onClick={(event) => setMenuAnchor(event.currentTarget)}>Mantenimiento</Button>
           </Stack>

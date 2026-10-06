@@ -1,8 +1,10 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { CssBaseline, ThemeProvider, createTheme } from '@mui/material'
+import { Box, CssBaseline, ThemeProvider, Typography, createTheme } from '@mui/material'
 import App from './App'
 import Gallery from './Gallery'
+import Login from './Login'
+import { fetchSession, logout } from './api'
 import { usePath } from './route'
 import './theme.css'
 
@@ -36,9 +38,44 @@ const theme = createTheme({
   },
 })
 
+function AdminGate() {
+  const [session, setSession] = useState(undefined)
+
+  useEffect(() => {
+    let active = true
+    fetchSession()
+      .then((data) => { if (active) setSession(data) })
+      .catch(() => { if (active) setSession(null) })
+    const expired = () => setSession(null)
+    window.addEventListener('nombresmad-unauthorized', expired)
+    return () => {
+      active = false
+      window.removeEventListener('nombresmad-unauthorized', expired)
+    }
+  }, [])
+
+  if (session === undefined) {
+    return (
+      <Box className="app-shell" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100%' }}>
+        <Typography color="text.secondary">Cargando…</Typography>
+      </Box>
+    )
+  }
+  if (!session) return <Login onSuccess={setSession} />
+  return (
+    <App
+      username={session.username}
+      onLogout={async () => {
+        try { await logout() } catch { /* the cookie is cleared locally anyway */ }
+        setSession(null)
+      }}
+    />
+  )
+}
+
 function Root() {
   const path = usePath()
-  return path === '/lista' ? <App /> : <Gallery />
+  return path === '/lista' ? <AdminGate /> : <Gallery />
 }
 
 const root = createRoot(document.getElementById('root'))

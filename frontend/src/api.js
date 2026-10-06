@@ -2,6 +2,16 @@ import axios from 'axios'
 
 export const api = axios.create({ baseURL: '/api' })
 
+api.interceptors.response.use(
+  (response) => response,
+  (err) => {
+    if (err?.response?.status === 401 && window.location.pathname === '/lista') {
+      window.dispatchEvent(new Event('nombresmad-unauthorized'))
+    }
+    return Promise.reject(err)
+  }
+)
+
 export const PAGE_SIZE = 25
 
 export async function fetchItems(query) {
@@ -86,6 +96,20 @@ export async function importData() {
 
 export async function migrateDb() {
   await api.post('/migrate')
+}
+
+export async function fetchSession() {
+  const { data } = await api.get('/session')
+  return data
+}
+
+export async function login(username, password) {
+  const { data } = await api.post('/login', { username, password })
+  return data
+}
+
+export async function logout() {
+  await api.post('/logout')
 }
 
 export function errorMessage(err) {

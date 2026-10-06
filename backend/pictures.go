@@ -25,6 +25,9 @@ func picturesDir() string {
 }
 
 func pictureHandler(w http.ResponseWriter, r *http.Request, id int) {
+	if r.Method != http.MethodGet && !requireAuth(w, r) {
+		return
+	}
 	switch r.Method {
 	case http.MethodGet:
 		servePicture(w, r, id)

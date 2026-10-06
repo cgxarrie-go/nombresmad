@@ -162,7 +162,7 @@ export default function Gallery() {
               Galería
             </Button>
             <Button variant="outlined" onClick={() => navigate('/lista')} sx={{ color: '#fffaf3', borderColor: 'rgba(255,250,243,0.75)', '&:hover': { borderColor: '#fffaf3', bgcolor: 'rgba(255,250,243,0.08)' } }}>
-              Lista
+              Administración
             </Button>
           </Box>
         </Container>

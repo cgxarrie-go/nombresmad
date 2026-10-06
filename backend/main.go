@@ -59,7 +59,11 @@ func main() {
 	if err = os.MkdirAll(picturesDir(), 0o755); err != nil {
 		log.Fatal(err)
 	}
+	initAuth()
 
+	http.HandleFunc("/api/login", withCORS(loginHandler))
+	http.HandleFunc("/api/logout", withCORS(logoutHandler))
+	http.HandleFunc("/api/session", withCORS(sessionHandler))
 	http.HandleFunc("/api/items", withCORS(itemsHandler))
 	http.HandleFunc("/api/items/", withCORS(itemHandler))
 	http.HandleFunc("/api/options", withCORS(optionsHandler))
@@ -77,6 +81,9 @@ func itemsHandler(w http.ResponseWriter, r *http.Request) {
 	case "GET":
 		listItems(w, r)
 	case "POST":
+		if !requireAuth(w, r) {
+			return
+		}
 		var it Item
 		if err := json.NewDecoder(r.Body).Decode(&it); err != nil {
 			http.Error(w, err.Error(), 400)
@@ -380,6 +387,9 @@ func itemHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		writeJSON(w, it)
 	case "PUT":
+		if !requireAuth(w, r) {
+			return
+		}
 		var it Item
 		if err := json.NewDecoder(r.Body).Decode(&it); err != nil {
 			http.Error(w, err.Error(), 400)
@@ -406,6 +416,9 @@ func itemHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		writeJSON(w, stored)
 	case "DELETE":
+		if !requireAuth(w, r) {
+			return
+		}
 		var picture string
 		err := db.QueryRow(`SELECT COALESCE(picture, '') FROM items WHERE id=$1`, id).Scan(&picture)
 		if err != nil {
@@ -456,6 +469,9 @@ func importHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", 405)
 		return
 	}
+	if !requireAuth(w, r) {
+		return
+	}
 	path, items, err := readNomadFile()
 	if err != nil {
 		http.Error(w, err.Error(), 500)
@@ -473,6 +489,9 @@ func importHandler(w http.ResponseWriter, r *http.Request) {
 func migrateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, "method not allowed", 405)
+		return
+	}
+	if !requireAuth(w, r) {
 		return
 	}
 	if err := applyMigrations(); err != nil {
