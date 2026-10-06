@@ -56,6 +56,23 @@ export async function deleteItem(id) {
   await api.delete(`/items/${id}`)
 }
 
+export function pictureSrc(item) {
+  if (!item?.id || !item.picture) return ''
+  return `/api/items/${item.id}/picture?v=${encodeURIComponent(item.picture)}`
+}
+
+export async function uploadPicture(id, file) {
+  const body = new FormData()
+  body.append('file', file)
+  const { data } = await api.post(`/items/${id}/picture`, body)
+  return data
+}
+
+export async function deletePicture(id) {
+  const { data } = await api.delete(`/items/${id}/picture`)
+  return data
+}
+
 export async function importData() {
   await api.post('/import')
 }

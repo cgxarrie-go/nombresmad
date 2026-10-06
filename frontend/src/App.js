@@ -41,17 +41,21 @@ import {
   PAGE_SIZE,
   createItem,
   deleteItem,
+  deletePicture,
   errorMessage,
   fetchItem,
   fetchItems,
   fetchOptions,
   importData,
   migrateDb,
+  pictureSrc,
   updateItem,
+  uploadPicture,
 } from './api'
 
 const COLUMNS = [
   { id: 'id', label: 'Nº', width: 64 },
+  { id: 'picture', label: 'Foto', width: 56, sortable: false },
   { id: 'text', label: 'Nombre', minWidth: 140 },
   { id: 'group', label: 'Grupo', minWidth: 140 },
   { id: 'woodType', label: 'Madera', minWidth: 120 },
@@ -182,15 +186,21 @@ export default function App() {
     setEditor({ mode: 'create', item: emptyItem(), loading: false })
   }
 
-  async function handleSave(payload) {
+  async function handleSave(payload, picture) {
     setSaving(true)
     try {
-      if (editor.mode === 'create') {
-        await createItem(payload)
-        notify('success', 'Nombre creado')
-      } else {
-        await updateItem(editor.item.id, payload)
-        notify('success', 'Cambios guardados')
+      const saved = editor.mode === 'create'
+        ? await createItem(payload)
+        : await updateItem(editor.item.id, payload)
+      try {
+        if (picture?.file) {
+          await uploadPicture(saved.id, picture.file)
+        } else if (picture?.remove && editor.mode !== 'create') {
+          await deletePicture(saved.id)
+        }
+        notify('success', editor.mode === 'create' ? 'Nombre creado' : 'Cambios guardados')
+      } catch (err) {
+        notify('error', `El nombre se guardó, pero la foto no se pudo guardar. ${errorMessage(err)}`)
       }
       closeEditor()
       refresh()
@@ -220,7 +230,7 @@ export default function App() {
     setMenuAnchor(null)
     setConfirm({
       title: 'Importar NoMad.json',
-      body: 'Se sustituyen todos los nombres por el contenido de NoMad.json.',
+      body: 'Se sustituyen todos los nombres por el contenido de NoMad.json. Las fotos guardadas se eliminan.',
       confirmLabel: 'Importar',
       danger: true,
       run: async () => {
@@ -378,13 +388,15 @@ export default function App() {
                   <TableCell className="actions-cell actions-compact">Acciones</TableCell>
                   {COLUMNS.map((column) => (
                     <TableCell key={column.id} align={column.align} sx={{ minWidth: column.minWidth, width: column.width }}>
-                      <TableSortLabel
-                        active={query.sort === column.id}
-                        direction={query.sort === column.id ? query.order : 'asc'}
-                        onClick={() => toggleSort(column.id)}
-                      >
-                        {column.label}
-                      </TableSortLabel>
+                      {column.sortable === false ? column.label : (
+                        <TableSortLabel
+                          active={query.sort === column.id}
+                          direction={query.sort === column.id ? query.order : 'asc'}
+                          onClick={() => toggleSort(column.id)}
+                        >
+                          {column.label}
+                        </TableSortLabel>
+                      )}
                     </TableCell>
                   ))}
                   <TableCell className="actions-cell actions-wide">Acciones</TableCell>
@@ -404,7 +416,17 @@ export default function App() {
                     </TableCell>
                     {COLUMNS.map((column) => (
                       <TableCell key={column.id} align={column.align}>
-                        {column.id === 'deliveredWithBox' ? (
+                        {column.id === 'picture' ? (
+                          item.picture ? (
+                            <Box
+                              component="img"
+                              src={pictureSrc(item)}
+                              alt=""
+                              loading="lazy"
+                              sx={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 0.5, display: 'block', bgcolor: 'action.hover' }}
+                            />
+                          ) : '—'
+                        ) : column.id === 'deliveredWithBox' ? (
                           <Chip size="small" variant="outlined" label={item.deliveredWithBox ? 'Sí' : 'No'} color={item.deliveredWithBox ? 'success' : 'default'} />
                         ) : column.id === 'text' ? (
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>{cellText(item, column.id)}</Typography>

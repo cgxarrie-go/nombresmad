@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Autocomplete,
+  Box,
   Button,
   CircularProgress,
   Dialog,
@@ -9,12 +10,23 @@ import {
   DialogTitle,
   FormControlLabel,
   Grid,
+  Stack,
   Switch,
   TextField,
   Typography,
 } from '@mui/material'
+import { pictureSrc } from './api'
 
 const DATE_RE = /^(\d{2})\/(\d{2})\/(\d{4})$/
+const MAX_PICTURE_BYTES = 8 * 1024 * 1024
+const PICTURE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+
+function pictureFileError(file) {
+  if (!file) return ''
+  if (file.size > MAX_PICTURE_BYTES) return 'La foto no puede superar 8 MB'
+  if (file.type && !PICTURE_TYPES.includes(file.type)) return 'Usa una imagen JPG, PNG, GIF o WebP'
+  return ''
+}
 
 export function emptyItem() {
   const now = new Date()
@@ -30,6 +42,7 @@ export function emptyItem() {
     group: '',
     price: 0,
     deliveredWithBox: false,
+    picture: '',
   }
 }
 
@@ -110,11 +123,17 @@ function ChoiceField({ label, value, options, onChange, error, helperText }) {
 export default function ItemDialog({ open, mode, item, loading, saving, options, onClose, onEdit, onDelete, onSubmit }) {
   const [form, setForm] = useState(item || emptyItem())
   const [errors, setErrors] = useState({})
+  const [pictureFile, setPictureFile] = useState(null)
+  const [removePicture, setRemovePicture] = useState(false)
+  const [pictureError, setPictureError] = useState('')
   const readOnly = mode === 'view'
 
   useEffect(() => {
     if (item) setForm(item)
     setErrors({})
+    setPictureFile(null)
+    setRemovePicture(false)
+    setPictureError('')
   }, [item, mode])
 
   function setField(key, value) {
@@ -124,9 +143,31 @@ export default function ItemDialog({ open, mode, item, loading, saving, options,
   function handleSubmit(event) {
     event.preventDefault()
     const nextErrors = validate(form)
+    const photoError = pictureFileError(pictureFile)
     setErrors(nextErrors)
-    if (Object.keys(nextErrors).length > 0) return
-    onSubmit(toPayload(form))
+    setPictureError(photoError)
+    if (Object.keys(nextErrors).length > 0 || photoError) return
+    onSubmit(toPayload(form), { file: pictureFile, remove: removePicture && !pictureFile })
+  }
+
+  function choosePicture(event) {
+    const file = event.target.files && event.target.files[0]
+    event.target.value = ''
+    if (!file) return
+    const message = pictureFileError(file)
+    if (message) {
+      setPictureError(message)
+      return
+    }
+    setPictureError('')
+    setPictureFile(file)
+    setRemovePicture(false)
+  }
+
+  function clearPicture() {
+    setPictureFile(null)
+    setRemovePicture(true)
+    setPictureError('')
   }
 
   const title = mode === 'create' ? 'Nuevo nombre' : mode === 'edit' ? 'Editar nombre' : 'Detalle del nombre'
@@ -143,49 +184,62 @@ export default function ItemDialog({ open, mode, item, loading, saving, options,
         <DialogContent>
           {loading ? (
             <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>Cargando…</Typography>
-          ) : readOnly ? (
-            <Grid container spacing={2} sx={{ pt: 1 }}>
-              {FIELDS.map((field) => (
-                <Grid item xs={12} sm={field.full ? 12 : 6} key={field.key}>
-                  <Typography variant="caption" color="text.secondary">{field.label}</Typography>
-                  <Typography>{displayValue(form, field.key)}</Typography>
-                </Grid>
-              ))}
-            </Grid>
           ) : (
-            <Grid container spacing={1.5} sx={{ pt: 1 }}>
-              {FIELDS.map((field) => (
-                <Grid item xs={12} sm={field.full ? 12 : 6} key={field.key}>
-                  {field.kind === 'bool' ? (
-                    <FormControlLabel
-                      control={<Switch checked={Boolean(form.deliveredWithBox)} onChange={(e) => setField('deliveredWithBox', e.target.checked)} />}
-                      label={field.label}
-                    />
-                  ) : field.kind === 'wood' || field.kind === 'group' ? (
-                    <ChoiceField
-                      label={field.label}
-                      value={form[field.key]}
-                      options={field.kind === 'wood' ? options.woodTypes : options.groups}
-                      onChange={(value) => setField(field.key, value)}
-                    />
-                  ) : (
-                    <TextField
-                      label={field.label}
-                      value={form[field.key] ?? ''}
-                      onChange={(e) => setField(field.key, e.target.value)}
-                      required={field.required}
-                      placeholder={field.placeholder}
-                      size="small"
-                      fullWidth
-                      type={field.kind === 'number' ? 'number' : 'text'}
-                      inputProps={field.kind === 'number' ? { min: 0, step: 1 } : undefined}
-                      error={Boolean(errors[field.key])}
-                      helperText={errors[field.key] || (field.date ? 'DD/MM/AAAA' : ' ')}
-                    />
-                  )}
+            <>
+              <PictureBlock
+                readOnly={readOnly}
+                item={form}
+                file={pictureFile}
+                removed={removePicture}
+                error={pictureError}
+                onPick={choosePicture}
+                onRemove={clearPicture}
+              />
+              {readOnly ? (
+                <Grid container spacing={2} sx={{ pt: 1 }}>
+                  {FIELDS.map((field) => (
+                    <Grid item xs={12} sm={field.full ? 12 : 6} key={field.key}>
+                      <Typography variant="caption" color="text.secondary">{field.label}</Typography>
+                      <Typography>{displayValue(form, field.key)}</Typography>
+                    </Grid>
+                  ))}
                 </Grid>
-              ))}
-            </Grid>
+              ) : (
+                <Grid container spacing={1.5} sx={{ pt: 1 }}>
+                  {FIELDS.map((field) => (
+                    <Grid item xs={12} sm={field.full ? 12 : 6} key={field.key}>
+                      {field.kind === 'bool' ? (
+                        <FormControlLabel
+                          control={<Switch checked={Boolean(form.deliveredWithBox)} onChange={(e) => setField('deliveredWithBox', e.target.checked)} />}
+                          label={field.label}
+                        />
+                      ) : field.kind === 'wood' || field.kind === 'group' ? (
+                        <ChoiceField
+                          label={field.label}
+                          value={form[field.key]}
+                          options={field.kind === 'wood' ? options.woodTypes : options.groups}
+                          onChange={(value) => setField(field.key, value)}
+                        />
+                      ) : (
+                        <TextField
+                          label={field.label}
+                          value={form[field.key] ?? ''}
+                          onChange={(e) => setField(field.key, e.target.value)}
+                          required={field.required}
+                          placeholder={field.placeholder}
+                          size="small"
+                          fullWidth
+                          type={field.kind === 'number' ? 'number' : 'text'}
+                          inputProps={field.kind === 'number' ? { min: 0, step: 1 } : undefined}
+                          error={Boolean(errors[field.key])}
+                          helperText={errors[field.key] || (field.date ? 'DD/MM/AAAA' : ' ')}
+                        />
+                      )}
+                    </Grid>
+                  ))}
+                </Grid>
+              )}
+            </>
           )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
@@ -206,6 +260,48 @@ export default function ItemDialog({ open, mode, item, loading, saving, options,
         </DialogActions>
       </BoxForm>
     </Dialog>
+  )
+}
+
+function PictureBlock({ readOnly, item, file, removed, error, onPick, onRemove }) {
+  const inputRef = useRef(null)
+  const previewUrl = useMemo(() => (file ? URL.createObjectURL(file) : ''), [file])
+  useEffect(() => {
+    if (!previewUrl) return undefined
+    return () => URL.revokeObjectURL(previewUrl)
+  }, [previewUrl])
+
+  const existing = !removed && item?.picture ? pictureSrc(item) : ''
+  const src = previewUrl || existing
+  const alt = item?.text ? `Foto de ${item.text}` : 'Foto'
+
+  return (
+    <Box sx={{ mb: 1 }}>
+      <Typography variant="caption" color="text.secondary">Foto</Typography>
+      {src ? (
+        existing && !previewUrl ? (
+          <Box component="a" href={existing} target="_blank" rel="noreferrer" sx={{ display: 'inline-block', mt: 0.5 }}>
+            <Box component="img" src={src} alt={alt} sx={{ display: 'block', maxWidth: '100%', maxHeight: 280, objectFit: 'contain', borderRadius: 1, bgcolor: 'action.hover' }} />
+          </Box>
+        ) : (
+          <Box component="img" src={src} alt={alt} sx={{ display: 'block', mt: 0.5, maxWidth: '100%', maxHeight: 280, objectFit: 'contain', borderRadius: 1, bgcolor: 'action.hover' }} />
+        )
+      ) : (
+        <Typography sx={{ mt: 0.5 }}>{readOnly ? '—' : 'Sin foto'}</Typography>
+      )}
+      {readOnly ? null : (
+        <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+          <Button type="button" size="small" variant="outlined" onClick={() => inputRef.current && inputRef.current.click()}>
+            {src ? 'Cambiar foto' : 'Elegir foto'}
+          </Button>
+          {src ? (
+            <Button type="button" size="small" color="error" onClick={onRemove}>Quitar foto</Button>
+          ) : null}
+          <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" hidden onChange={onPick} />
+        </Stack>
+      )}
+      {error ? <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{error}</Typography> : null}
+    </Box>
   )
 }
 

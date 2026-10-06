@@ -29,6 +29,7 @@ type Item struct {
 	Group            string `json:"group"`
 	Price            int    `json:"price"`
 	DeliveredWithBox bool   `json:"deliveredWithBox"`
+	Picture          string `json:"picture"`
 }
 
 var db *sql.DB
@@ -53,6 +54,9 @@ func main() {
 		log.Fatal(err)
 	}
 	if err = syncIDSequence(); err != nil {
+		log.Fatal(err)
+	}
+	if err = os.MkdirAll(picturesDir(), 0o755); err != nil {
 		log.Fatal(err)
 	}
 
@@ -91,7 +95,7 @@ func itemsHandler(w http.ResponseWriter, r *http.Request) {
 
 const pageSize = 25
 
-const itemSelect = `id, COALESCE(dateCreated, ''), COALESCE(text, ''), COALESCE(size, ''), COALESCE(thicknesses, ''), COALESCE(woodType, ''), COALESCE(deliveryDate, ''), COALESCE(deliveredTo, ''), COALESCE("group", ''), COALESCE(price, 0), COALESCE(deliveredWithBox, false)`
+const itemSelect = `id, COALESCE(dateCreated, ''), COALESCE(text, ''), COALESCE(size, ''), COALESCE(thicknesses, ''), COALESCE(woodType, ''), COALESCE(deliveryDate, ''), COALESCE(deliveredTo, ''), COALESCE("group", ''), COALESCE(price, 0), COALESCE(deliveredWithBox, false), COALESCE(picture, '')`
 
 type itemPage struct {
 	Items      []Item `json:"items"`
@@ -304,26 +308,39 @@ type scanner interface {
 
 func scanItem(s scanner) (Item, error) {
 	var it Item
-	err := s.Scan(&it.ID, &it.DateCreated, &it.Text, &it.Size, &it.Thicknesses, &it.WoodType, &it.DeliveryDate, &it.DeliveredTo, &it.Group, &it.Price, &it.DeliveredWithBox)
+	err := s.Scan(&it.ID, &it.DateCreated, &it.Text, &it.Size, &it.Thicknesses, &it.WoodType, &it.DeliveryDate, &it.DeliveredTo, &it.Group, &it.Price, &it.DeliveredWithBox, &it.Picture)
 	return it, err
+}
+
+func loadItem(id int) (Item, error) {
+	return scanItem(db.QueryRow(`SELECT `+itemSelect+` FROM items WHERE id=$1`, id))
 }
 
 // itemHandler handles requests for /api/items/{id}
 func itemHandler(w http.ResponseWriter, r *http.Request) {
-	// expect /api/items/{id}
-	idStr := r.URL.Path[len("/api/items/"):]
-	if idStr == "" {
+	// expect /api/items/{id} or /api/items/{id}/picture
+	rest := strings.Trim(strings.TrimPrefix(r.URL.Path, "/api/items/"), "/")
+	parts := strings.Split(rest, "/")
+	if len(parts) == 0 || parts[0] == "" {
 		http.Error(w, "missing id", 400)
 		return
 	}
-	id, err := strconv.Atoi(idStr)
+	id, err := strconv.Atoi(parts[0])
 	if err != nil {
 		http.Error(w, "invalid id", 400)
 		return
 	}
+	if len(parts) == 2 && parts[1] == "picture" {
+		pictureHandler(w, r, id)
+		return
+	}
+	if len(parts) != 1 {
+		http.Error(w, "not found", 404)
+		return
+	}
 	switch r.Method {
 	case "GET":
-		it, err := scanItem(db.QueryRow(`SELECT `+itemSelect+` FROM items WHERE id=$1`, id))
+		it, err := loadItem(id)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				http.Error(w, "not found", 404)
@@ -353,9 +370,23 @@ func itemHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "not found", 404)
 			return
 		}
-		it.ID = id
-		writeJSON(w, it)
+		stored, err := loadItem(id)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		writeJSON(w, stored)
 	case "DELETE":
+		var picture string
+		err := db.QueryRow(`SELECT COALESCE(picture, '') FROM items WHERE id=$1`, id).Scan(&picture)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				http.Error(w, "not found", 404)
+				return
+			}
+			http.Error(w, err.Error(), 500)
+			return
+		}
 		res, err := db.Exec(`DELETE FROM items WHERE id=$1`, id)
 		if err != nil {
 			http.Error(w, err.Error(), 500)
@@ -370,6 +401,7 @@ func itemHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "not found", 404)
 			return
 		}
+		removePictureFile(picture)
 		writeJSON(w, map[string]string{"status": "deleted"})
 	default:
 		http.Error(w, "method not allowed", 405)
@@ -513,6 +545,11 @@ func insertItems(items []Item, replace bool) error {
 	}
 	if err := tx.Commit(); err != nil {
 		return err
+	}
+	if replace {
+		if err := clearPictures(); err != nil {
+			return err
+		}
 	}
 	return syncIDSequence()
 }

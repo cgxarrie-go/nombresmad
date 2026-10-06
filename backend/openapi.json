@@ -104,6 +104,47 @@
         }
       }
     },
+    "/api/items/{id}/picture": {
+      "get": {
+        "tags": ["items"],
+        "summary": "Get an item picture",
+        "produces": ["image/jpeg", "image/png", "image/gif", "image/webp"],
+        "parameters": [{"$ref": "#/parameters/itemId"}],
+        "responses": {
+          "200": {"description": "Image bytes"},
+          "404": {"description": "Item or picture not found", "schema": {"type": "string"}},
+          "500": {"description": "Read error", "schema": {"type": "string"}}
+        }
+      },
+      "post": {
+        "tags": ["items"],
+        "summary": "Upload or replace an item picture",
+        "description": "Accepts one image file (JPEG, PNG, GIF, or WebP) up to 8 MB in the form field file. Replaces any picture already stored for the item.",
+        "consumes": ["multipart/form-data"],
+        "produces": ["application/json"],
+        "parameters": [
+          {"$ref": "#/parameters/itemId"},
+          {"name": "file", "in": "formData", "type": "file", "required": true, "description": "Image file"}
+        ],
+        "responses": {
+          "200": {"description": "Item with the stored picture name", "schema": {"$ref": "#/definitions/Item"}},
+          "400": {"description": "Missing, too large, or unsupported image", "schema": {"type": "string"}},
+          "404": {"description": "Item not found", "schema": {"type": "string"}},
+          "500": {"description": "Database or disk error", "schema": {"type": "string"}}
+        }
+      },
+      "delete": {
+        "tags": ["items"],
+        "summary": "Remove an item picture",
+        "produces": ["application/json"],
+        "parameters": [{"$ref": "#/parameters/itemId"}],
+        "responses": {
+          "200": {"description": "Item without a picture", "schema": {"$ref": "#/definitions/Item"}},
+          "404": {"description": "Item not found", "schema": {"type": "string"}},
+          "500": {"description": "Database error", "schema": {"type": "string"}}
+        }
+      }
+    },
     "/api/options": {
       "get": {
         "tags": ["items"],
@@ -120,7 +161,7 @@
       "post": {
         "tags": ["admin"],
         "summary": "Reload items from NoMad.json",
-        "description": "Replaces every row in items with the contents of NoMad.json. Startup already loads that file when the table is empty.",
+        "description": "Replaces every row in items with the contents of NoMad.json and deletes stored pictures. Startup already loads that file when the table is empty.",
         "produces": ["application/json"],
         "responses": {
           "200": {"description": "Imported", "schema": {"$ref": "#/definitions/Status"}},
@@ -166,7 +207,8 @@
         "deliveredTo": {"type": "string", "example": "LAURA-AGUSTIN"},
         "group": {"type": "string", "example": "CRUCI"},
         "price": {"type": "integer", "example": 0},
-        "deliveredWithBox": {"type": "boolean", "example": false}
+        "deliveredWithBox": {"type": "boolean", "example": false},
+        "picture": {"type": "string", "example": "1-1710000000000000000.jpg", "description": "Stored file name. Empty when the item has no picture."}
       }
     },
     "ItemInput": {

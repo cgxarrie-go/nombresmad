@@ -27,6 +27,9 @@ go.work.sum
 # env file
 .env
 
+# Uploaded item pictures
+backend/pictures/
+
 # Editor/IDE
 # .idea/
 # .vscode/
