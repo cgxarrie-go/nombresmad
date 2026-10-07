@@ -16,7 +16,7 @@ docker-compose up --build
 From `backend` folder:
 
 ```bash
-go run main.go
+go run ./cmd
 ```
 
 Then in another terminal from `backend` run:

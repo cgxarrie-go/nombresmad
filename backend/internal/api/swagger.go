@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	_ "embed"
@@ -19,9 +19,9 @@ func init() {
 	swag.Register(swag.Name, openAPIDoc{})
 }
 
-func registerSwagger() {
-	http.HandleFunc("/swagger", func(w http.ResponseWriter, r *http.Request) {
+func registerSwagger(mux *http.ServeMux) {
+	mux.HandleFunc("/swagger", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/swagger/", http.StatusMovedPermanently)
 	})
-	http.HandleFunc("/swagger/", httpSwagger.WrapHandler)
+	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 }
