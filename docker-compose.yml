@@ -1,0 +1,50 @@
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: nombresmad
+    ports:
+      - 5432:5432
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d nombresmad"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+  backend:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/nombresmad?sslmode=disable
+      ADMIN_USER: admin
+      ADMIN_PASSWORD: admin
+    ports:
+      - 8080:8080
+    volumes:
+      - ./backend:/app
+      - ./NoMad.json:/NoMad.json:ro
+
+  frontend:
+    build:
+      context: ./frontend
+      target: deps
+    environment:
+      API_PROXY_TARGET: http://backend:8080
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - 3000:3000
+    depends_on:
+      - backend
+    command: ["npm", "start"]
+
+volumes:
+  db_data:
