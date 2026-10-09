@@ -34,5 +34,10 @@ npm start
 
 If using Docker Compose the frontend is available at http://localhost:3000 and backend at http://localhost:8080
 
+Frontend backend configuration:
+
+- `REACT_APP_API_URL` sets the browser-facing API base URL. It defaults to `/api`, which keeps local requests on the frontend origin.
+- `API_PROXY_TARGET` sets the Create React App development proxy target. It defaults to `http://localhost:8080`; Docker Compose sets it to `http://backend:8080`.
+
 # nombresmad
 nombres en mdera

@@ -1,6 +1,8 @@
 import axios from 'axios'
 
-export const api = axios.create({ baseURL: '/api' })
+const API_BASE_URL = (process.env.REACT_APP_API_URL || '/api').replace(/\/+$/, '')
+
+export const api = axios.create({ baseURL: API_BASE_URL })
 
 api.interceptors.response.use(
   (response) => response,
@@ -75,7 +77,7 @@ export async function deleteItem(id) {
 
 export function pictureSrc(item) {
   if (!item?.id || !item.picture) return ''
-  return `/api/items/${item.id}/picture?v=${encodeURIComponent(item.picture)}`
+  return `${API_BASE_URL}/items/${item.id}/picture?v=${encodeURIComponent(item.picture)}`
 }
 
 export async function uploadPicture(id, file) {
