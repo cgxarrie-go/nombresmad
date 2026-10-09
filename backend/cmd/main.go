@@ -46,9 +46,10 @@ func main() {
 		catalog,
 		auth,
 	)
-	fmt.Println("Server listening on :8080")
+	port := getenv("PORT", "8080")
+	fmt.Printf("Server listening on :%s\n", port)
 	fmt.Println("Swagger UI at http://localhost:8080/swagger/")
-	log.Fatal(http.ListenAndServe(":8080", server.Handler()))
+	log.Fatal(http.ListenAndServe(":"+port, server.Handler()))
 }
 
 func databaseURL() string {

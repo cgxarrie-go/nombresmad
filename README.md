@@ -39,5 +39,11 @@ Frontend backend configuration:
 - `REACT_APP_API_URL` sets the browser-facing API base URL. It defaults to `/api`, which keeps local requests on the frontend origin.
 - `API_PROXY_TARGET` sets the Create React App development proxy target. It defaults to `http://localhost:8080`; Docker Compose sets it to `http://backend:8080`.
 
+Railway deployment:
+
+- Set `API_PROXY_TARGET` on the frontend service to `http://<backend-private-domain>:<backend-port>`. Use the backend's Railway private domain and its assigned `PORT`; do not append `/api`.
+- The production frontend proxies `/api` through this variable, so the backend can remain private and session cookies stay same-origin.
+- The backend listens on Railway's `PORT` and defaults to `8080` for local development and Docker Compose.
+
 # nombresmad
 nombres en mdera
