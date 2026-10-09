@@ -5,7 +5,9 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 
 	_ "github.com/lib/pq"
@@ -16,11 +18,7 @@ import (
 )
 
 func main() {
-	dsn := os.Getenv("DATABASE_URL")
-	if dsn == "" {
-		dsn = "postgres://postgres:postgres@localhost:5432/nombresmad?sslmode=disable"
-	}
-	db, err := sql.Open("postgres", dsn)
+	db, err := sql.Open("postgres", databaseURL())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -51,6 +49,24 @@ func main() {
 	fmt.Println("Server listening on :8080")
 	fmt.Println("Swagger UI at http://localhost:8080/swagger/")
 	log.Fatal(http.ListenAndServe(":8080", server.Handler()))
+}
+
+func databaseURL() string {
+	u := url.URL{
+		Scheme:   "postgres",
+		User:     url.UserPassword(getenv("PGUSER", "postgres"), getenv("PGPASSWORD", "postgres")),
+		Host:     net.JoinHostPort(getenv("PGHOST", "localhost"), getenv("PGPORT", "5432")),
+		Path:     getenv("PGDATABASE", "nombresmad"),
+		RawQuery: url.Values{"sslmode": {getenv("PGSSLMODE", "disable")}}.Encode(),
+	}
+	return u.String()
+}
+
+func getenv(key, fallback string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return fallback
 }
 
 func newAuth() (*service.Auth, error) {
