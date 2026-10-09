@@ -18,7 +18,7 @@ type catalogFiles interface {
 	Clear() error
 }
 
-// Catalog loads migrations and the NoMad.json seed file.
+// Catalog loads migrations and the initial_load.json seed file.
 type Catalog struct {
 	items catalogItems
 	files catalogFiles
@@ -52,7 +52,7 @@ func (c *Catalog) Migrate() error {
 	return nil
 }
 
-// SeedIfEmpty loads NoMad.json only when the items table has no rows.
+// SeedIfEmpty loads initial_load.json only when the items table has no rows.
 // Later starts keep whatever is already stored.
 func (c *Catalog) SeedIfEmpty() error {
 	n, err := c.items.Count()
@@ -74,7 +74,7 @@ func (c *Catalog) SeedIfEmpty() error {
 	return c.items.SyncIDSequence()
 }
 
-// Reload replaces every item with the contents of NoMad.json.
+// Reload replaces every item with the contents of initial_load.json.
 func (c *Catalog) Reload() (int, string, error) {
 	path, items, err := readNomadFile()
 	if err != nil {

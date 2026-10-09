@@ -220,7 +220,7 @@ func (r *ItemRepo) Exec(query string) error {
 }
 
 // SyncIDSequence points the id sequence at the current maximum so the next
-// insert does not collide with ids loaded from NoMad.json.
+// insert does not collide with ids loaded from initial_load.json.
 func (r *ItemRepo) SyncIDSequence() error {
 	_, err := r.db.Exec(`
 		SELECT setval(

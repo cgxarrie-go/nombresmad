@@ -49,7 +49,7 @@ func (f *flexString) UnmarshalJSON(b []byte) error {
 func readNomadFile() (string, []model.Item, error) {
 	path := resolveNomadFile()
 	if path == "" {
-		return "", nil, fmt.Errorf("NoMad.json not found (set NOMAD_JSON or place the file next to the repo root)")
+		return "", nil, fmt.Errorf("initial_load.json not found (set NOMAD_JSON or place the file in backend/seed_data)")
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -124,13 +124,17 @@ func resolveNomadFile() string {
 		candidates = append(candidates, p)
 	}
 	candidates = append(candidates,
-		"/NoMad.json",
-		filepath.Join("..", "NoMad.json"),
-		"NoMad.json",
+		filepath.Join("seed_data", "initial_load.json"),
+		filepath.Join("backend", "seed_data", "initial_load.json"),
+		filepath.Join("..", "seed_data", "initial_load.json"),
+		filepath.Join("..", "..", "seed_data", "initial_load.json"),
 	)
 	if exe, err := os.Executable(); err == nil {
 		dir := filepath.Dir(exe)
-		candidates = append(candidates, filepath.Join(dir, "NoMad.json"), filepath.Join(dir, "..", "NoMad.json"))
+		candidates = append(candidates,
+			filepath.Join(dir, "seed_data", "initial_load.json"),
+			filepath.Join(dir, "..", "seed_data", "initial_load.json"),
+		)
 	}
 	for _, p := range candidates {
 		st, err := os.Stat(p)

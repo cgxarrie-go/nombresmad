@@ -211,8 +211,8 @@
     "/api/import": {
       "post": {
         "tags": ["admin"],
-        "summary": "Reload items from NoMad.json",
-        "description": "Replaces every row in items with the contents of NoMad.json and deletes stored pictures. Startup already loads that file when the table is empty.",
+        "summary": "Reload items from initial_load.json",
+        "description": "Replaces every row in items with the contents of initial_load.json and deletes stored pictures. Startup already loads that file when the table is empty.",
         "produces": ["application/json"],
         "responses": {
           "200": {"description": "Imported", "schema": {"$ref": "#/definitions/Status"}},
