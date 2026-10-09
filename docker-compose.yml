@@ -21,7 +21,11 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgres://postgres:postgres@db:5432/nombresmad?sslmode=disable
+      PGHOST: db
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: nombresmad
       ADMIN_USER: admin
       ADMIN_PASSWORD: admin
     ports:
