@@ -17,7 +17,7 @@ export default function Login({ onSuccess }) {
       const session = await login(username.trim(), password)
       onSuccess(session)
     } catch (err) {
-      setError(err?.response?.status === 401 ? 'Usuario o contraseña incorrectos' : errorMessage(err))
+      setError(err?.response?.status === 401 ? 'Incorrect username or password' : errorMessage(err))
     } finally {
       setSubmitting(false)
     }
@@ -27,13 +27,13 @@ export default function Login({ onSuccess }) {
     <Box className="app-shell" sx={{ display: 'flex', alignItems: 'center' }}>
       <Container maxWidth="xs" sx={{ py: 6 }}>
         <Paper sx={{ p: 3 }}>
-          <Typography variant="h4" component="h1" sx={{ mb: 0.5 }}>Administración</Typography>
+          <Typography variant="h4" component="h1" sx={{ mb: 0.5 }}>Administration</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Entra para crear, editar y borrar nombres.
+            Sign in to create, edit, and delete names.
           </Typography>
           <Box component="form" onSubmit={handleSubmit} sx={{ display: 'grid', gap: 1.5 }}>
             <TextField
-              label="Usuario"
+              label="Username"
               value={username}
               onChange={(event) => setUsername(event.target.value)}
               autoComplete="username"
@@ -42,7 +42,7 @@ export default function Login({ onSuccess }) {
               size="small"
             />
             <TextField
-              label="Contraseña"
+              label="Password"
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
@@ -51,8 +51,8 @@ export default function Login({ onSuccess }) {
               size="small"
             />
             {error ? <Alert severity="error">{error}</Alert> : null}
-            <Button type="submit" variant="contained" disabled={submitting}>Entrar</Button>
-            <Button type="button" onClick={() => navigate('/')}>Volver a la galería</Button>
+            <Button type="submit" variant="contained" disabled={submitting}>Sign in</Button>
+            <Button type="button" onClick={() => navigate('/')}>Back to gallery</Button>
           </Box>
         </Paper>
       </Container>

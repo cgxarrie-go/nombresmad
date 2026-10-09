@@ -26,7 +26,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !s.auth.Check(strings.TrimSpace(body.Username), body.Password) {
-		http.Error(w, "Usuario o contraseña incorrectos", http.StatusUnauthorized)
+		http.Error(w, "Incorrect username or password", http.StatusUnauthorized)
 		return
 	}
 	setSessionCookie(w, s.auth.Sign(s.auth.Username(), time.Now().Add(sessionTTL)))
@@ -49,7 +49,7 @@ func (s *Server) session(w http.ResponseWriter, r *http.Request) {
 	}
 	user, ok := s.sessionUser(r)
 	if !ok {
-		http.Error(w, "no autorizado", http.StatusUnauthorized)
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
 	writeJSON(w, map[string]string{"username": user})
@@ -59,7 +59,7 @@ func (s *Server) requireAuth(w http.ResponseWriter, r *http.Request) bool {
 	if _, ok := s.sessionUser(r); ok {
 		return true
 	}
-	http.Error(w, "no autorizado", http.StatusUnauthorized)
+	http.Error(w, "unauthorized", http.StatusUnauthorized)
 	return false
 }
 

@@ -173,22 +173,22 @@ export default function Gallery() {
             NombresMad
           </Typography>
           <Typography sx={{ maxWidth: 460, color: 'rgba(255, 250, 243, 0.9)' }}>
-            Nombres tallados en madera.
+            Hand-carved wooden names.
             {' '}
-            {pageData.total.toLocaleString('es-ES')} {pageData.total === 1 ? 'foto' : 'fotos'} en la galería.
+            {pageData.total.toLocaleString('en-US')} {pageData.total === 1 ? 'photo' : 'photos'} in the gallery.
           </Typography>
         </Container>
         {session !== undefined && (
           <Box sx={{ position: 'absolute', top: 16, right: 16, zIndex: 2, display: 'flex', gap: 1 }}>
-            <Tooltip title="Administración">
-              <IconButton aria-label="Administración" onClick={() => navigate('/lista')} sx={cornerIconSx}>
+            <Tooltip title="Administration">
+              <IconButton aria-label="Administration" onClick={() => navigate('/lista')} sx={cornerIconSx}>
                 <AdminPanelSettingsOutlinedIcon />
               </IconButton>
             </Tooltip>
             {session && (
-              <Tooltip title={session.username ? `Salir (${session.username})` : 'Salir'}>
+              <Tooltip title={session.username ? `Sign out (${session.username})` : 'Sign out'}>
                 <IconButton
-                  aria-label={session.username ? `Salir (${session.username})` : 'Salir'}
+                  aria-label={session.username ? `Sign out (${session.username})` : 'Sign out'}
                   onClick={signOut}
                   sx={cornerIconSx}
                 >
@@ -205,35 +205,35 @@ export default function Gallery() {
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1.4fr 1fr 1fr' }, gap: 1.5 }}>
             <TextField
               size="small"
-              label="Nombre"
-              placeholder="Buscar por nombre"
+              label="Name"
+              placeholder="Search by name"
               value={nameInput}
               onChange={(event) => setNameInput(event.target.value)}
             />
             <TextField
               select
               size="small"
-              label="Tamaño"
+              label="Size"
               value={query.size}
               onChange={(event) => setFilter({ size: event.target.value })}
             >
-              <MenuItem value="">Todos</MenuItem>
+              <MenuItem value="">All</MenuItem>
               {options.sizes.map((size) => <MenuItem key={size} value={size}>{size}</MenuItem>)}
             </TextField>
             <TextField
               select
               size="small"
-              label="Madera"
+              label="Wood"
               value={query.woodType}
               onChange={(event) => setFilter({ woodType: event.target.value })}
             >
-              <MenuItem value="">Todas</MenuItem>
+              <MenuItem value="">All</MenuItem>
               {options.woodTypes.map((wood) => <MenuItem key={wood} value={wood}>{wood}</MenuItem>)}
             </TextField>
           </Box>
           {filtersActive ? (
             <Button size="small" startIcon={<FilterAltOffIcon />} onClick={clearFilters} sx={{ mt: 1 }}>
-              Limpiar filtros
+              Clear filters
             </Button>
           ) : null}
         </Paper>
@@ -243,7 +243,7 @@ export default function Gallery() {
           {loadError ? <Alert severity="error" sx={{ m: 2 }}>{loadError}</Alert> : null}
           {!loading && pageData.items.length === 0 ? (
             <Typography sx={{ py: 6, textAlign: 'center', color: 'text.secondary' }}>
-              {filtersActive ? 'Ninguna foto coincide con los filtros.' : 'Todavía no hay fotos.'}
+              {filtersActive ? 'No photos match the filters.' : 'There are no photos yet.'}
             </Typography>
           ) : (
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 2, p: 2 }}>
@@ -253,7 +253,7 @@ export default function Gallery() {
                   component="button"
                   type="button"
                   onClick={() => setActive(index)}
-                  aria-label={`Ver foto de ${item.text || item.id}`}
+                  aria-label={`View photo of ${item.text || item.id}`}
                   sx={{
                     p: 0,
                     overflow: 'hidden',
@@ -292,8 +292,8 @@ export default function Gallery() {
             }}
             rowsPerPage={PAGE_SIZE}
             rowsPerPageOptions={[PAGE_SIZE]}
-            labelRowsPerPage="Por página"
-            labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`}
+            labelRowsPerPage="Per page"
+            labelDisplayedRows={({ from, to, count }) => `${from}–${to} of ${count}`}
           />
         </Paper>
       </Container>
@@ -301,19 +301,19 @@ export default function Gallery() {
       <Dialog open={Boolean(current)} onClose={() => setActive(null)} maxWidth="md" fullWidth>
         {current ? (
           <Box sx={{ position: 'relative', bgcolor: '#2c2416' }}>
-            <IconButton aria-label="Cerrar" onClick={() => setActive(null)} sx={{ position: 'absolute', top: 8, right: 8, color: '#fffaf3', bgcolor: 'rgba(0,0,0,0.35)' }}>
+            <IconButton aria-label="Close" onClick={() => setActive(null)} sx={{ position: 'absolute', top: 8, right: 8, color: '#fffaf3', bgcolor: 'rgba(0,0,0,0.35)' }}>
               <CloseIcon />
             </IconButton>
-            <IconButton aria-label="Anterior" disabled={active === 0} onClick={() => step(-1)} sx={{ position: 'absolute', top: '45%', left: 8, color: '#fffaf3', bgcolor: 'rgba(0,0,0,0.35)' }}>
+            <IconButton aria-label="Previous" disabled={active === 0} onClick={() => step(-1)} sx={{ position: 'absolute', top: '45%', left: 8, color: '#fffaf3', bgcolor: 'rgba(0,0,0,0.35)' }}>
               <ChevronLeftIcon />
             </IconButton>
-            <IconButton aria-label="Siguiente" disabled={active === pageData.items.length - 1} onClick={() => step(1)} sx={{ position: 'absolute', top: '45%', right: 8, color: '#fffaf3', bgcolor: 'rgba(0,0,0,0.35)' }}>
+            <IconButton aria-label="Next" disabled={active === pageData.items.length - 1} onClick={() => step(1)} sx={{ position: 'absolute', top: '45%', right: 8, color: '#fffaf3', bgcolor: 'rgba(0,0,0,0.35)' }}>
               <ChevronRightIcon />
             </IconButton>
             <Box
               component="img"
               src={pictureSrc(current)}
-              alt={`Foto de ${current.text || current.id}`}
+              alt={`Photo of ${current.text || current.id}`}
               sx={{ display: 'block', width: '100%', maxHeight: '75vh', objectFit: 'contain' }}
             />
             <Box sx={{ px: 2.5, py: 1.5, color: '#fffaf3' }}>

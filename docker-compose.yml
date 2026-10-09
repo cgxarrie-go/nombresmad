@@ -28,11 +28,12 @@ services:
       PGDATABASE: nombresmad
       ADMIN_USER: admin
       ADMIN_PASSWORD: admin
+      NOMAD_JSON: /app/seed_data/initial_load.json
     ports:
       - 8080:8080
     volumes:
       - ./backend:/app
-      - ./NoMad.json:/NoMad.json:ro
+      - ./backend/seed_data/initial_load.json:/app/seed_data/initial_load.json:ro
 
   frontend:
     build:

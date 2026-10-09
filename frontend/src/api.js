@@ -115,6 +115,6 @@ export async function logout() {
 export function errorMessage(err) {
   const data = err?.response?.data
   if (typeof data === 'string' && data.trim()) return data.trim()
-  if (err?.message === 'Network Error') return 'No hay conexión con el servidor'
-  return 'No se pudo completar la operación'
+  if (err?.message === 'Network Error') return 'No connection to the server'
+  return 'The operation could not be completed'
 }

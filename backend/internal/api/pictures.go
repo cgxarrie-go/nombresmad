@@ -40,7 +40,7 @@ func (s *Server) servePicture(w http.ResponseWriter, r *http.Request, id int) {
 func (s *Server) uploadPicture(w http.ResponseWriter, r *http.Request, id int) {
 	r.Body = http.MaxBytesReader(w, r.Body, service.MaxPictureBytes+(1<<20))
 	if err := r.ParseMultipartForm(service.MaxPictureBytes); err != nil {
-		http.Error(w, "No se pudo leer la imagen. El máximo es 8 MB.", http.StatusBadRequest)
+		http.Error(w, "The image could not be read. The maximum is 8 MB.", http.StatusBadRequest)
 		return
 	}
 	if r.MultipartForm != nil {
@@ -48,13 +48,13 @@ func (s *Server) uploadPicture(w http.ResponseWriter, r *http.Request, id int) {
 	}
 	file, _, err := r.FormFile("file")
 	if err != nil {
-		http.Error(w, "Falta el archivo de imagen", http.StatusBadRequest)
+		http.Error(w, "Image file is missing", http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
 	data, err := io.ReadAll(io.LimitReader(file, service.MaxPictureBytes+1))
 	if err != nil {
-		http.Error(w, "No se pudo leer la imagen", http.StatusBadRequest)
+		http.Error(w, "The image could not be read", http.StatusBadRequest)
 		return
 	}
 	stored, err := s.pictures.Upload(id, data)

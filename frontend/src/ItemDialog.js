@@ -23,8 +23,8 @@ const PICTURE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 
 function pictureFileError(file) {
   if (!file) return ''
-  if (file.size > MAX_PICTURE_BYTES) return 'La foto no puede superar 8 MB'
-  if (file.type && !PICTURE_TYPES.includes(file.type)) return 'Usa una imagen JPG, PNG, GIF o WebP'
+  if (file.size > MAX_PICTURE_BYTES) return 'The photo cannot exceed 8 MB'
+  if (file.type && !PICTURE_TYPES.includes(file.type)) return 'Use a JPG, PNG, GIF, or WebP image'
   return ''
 }
 
@@ -58,32 +58,32 @@ function validDate(value) {
 }
 
 function displayValue(item, key) {
-  if (key === 'deliveredWithBox') return item.deliveredWithBox ? 'Sí' : 'No'
+  if (key === 'deliveredWithBox') return item.deliveredWithBox ? 'Yes' : 'No'
   if (key === 'price') return item.price ?? 0
   const value = item[key]
   return value === '' || value == null ? '—' : value
 }
 
 const FIELDS = [
-  { key: 'text', label: 'Nombre', required: true, full: true },
-  { key: 'dateCreated', label: 'Fecha de alta', placeholder: 'DD/MM/AAAA', date: true },
-  { key: 'deliveryDate', label: 'Fecha de entrega', placeholder: 'DD/MM/AAAA', date: true },
-  { key: 'size', label: 'Tamaño' },
-  { key: 'thicknesses', label: 'Grosor' },
-  { key: 'woodType', label: 'Madera', kind: 'wood' },
-  { key: 'group', label: 'Grupo', kind: 'group' },
-  { key: 'deliveredTo', label: 'Entregado a', full: true },
-  { key: 'price', label: 'Precio', kind: 'number' },
-  { key: 'deliveredWithBox', label: 'Entregado con caja', kind: 'bool', full: true },
+  { key: 'text', label: 'Name', required: true, full: true },
+  { key: 'dateCreated', label: 'Date created', placeholder: 'DD/MM/YYYY', date: true },
+  { key: 'deliveryDate', label: 'Delivery date', placeholder: 'DD/MM/YYYY', date: true },
+  { key: 'size', label: 'Size' },
+  { key: 'thicknesses', label: 'Thickness' },
+  { key: 'woodType', label: 'Wood', kind: 'wood' },
+  { key: 'group', label: 'Group', kind: 'group' },
+  { key: 'deliveredTo', label: 'Delivered to', full: true },
+  { key: 'price', label: 'Price', kind: 'number' },
+  { key: 'deliveredWithBox', label: 'Delivered with box', kind: 'bool', full: true },
 ]
 
 function validate(form) {
   const errors = {}
-  if (!String(form.text || '').trim()) errors.text = 'El nombre es obligatorio'
-  if (!validDate(String(form.dateCreated || '').trim())) errors.dateCreated = 'Usa el formato DD/MM/AAAA'
-  if (!validDate(String(form.deliveryDate || '').trim())) errors.deliveryDate = 'Usa el formato DD/MM/AAAA'
+  if (!String(form.text || '').trim()) errors.text = 'Name is required'
+  if (!validDate(String(form.dateCreated || '').trim())) errors.dateCreated = 'Use the format DD/MM/YYYY'
+  if (!validDate(String(form.deliveryDate || '').trim())) errors.deliveryDate = 'Use the format DD/MM/YYYY'
   const price = form.price === '' || form.price == null ? 0 : Number(form.price)
-  if (!Number.isInteger(price) || price < 0) errors.price = 'Introduce un entero igual o mayor que 0'
+  if (!Number.isInteger(price) || price < 0) errors.price = 'Enter an integer greater than or equal to 0'
   return errors
 }
 
@@ -170,20 +170,20 @@ export default function ItemDialog({ open, mode, item, loading, saving, options,
     setPictureError('')
   }
 
-  const title = mode === 'create' ? 'Nuevo nombre' : mode === 'edit' ? 'Editar nombre' : 'Detalle del nombre'
+  const title = mode === 'create' ? 'New name' : mode === 'edit' ? 'Edit name' : 'Name details'
 
   return (
     <Dialog open={open} onClose={() => { if (!saving) onClose() }} fullWidth maxWidth="sm">
       <DialogTitle sx={{ pb: 0.5 }}>
         {title}
         {item?.id ? (
-          <Typography variant="body2" color="text.secondary">Número {item.id}</Typography>
+          <Typography variant="body2" color="text.secondary"># {item.id}</Typography>
         ) : null}
       </DialogTitle>
       <BoxForm onSubmit={handleSubmit}>
         <DialogContent>
           {loading ? (
-            <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>Cargando…</Typography>
+            <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>Loading…</Typography>
           ) : (
             <>
               <PictureBlock
@@ -245,15 +245,15 @@ export default function ItemDialog({ open, mode, item, loading, saving, options,
         <DialogActions sx={{ px: 3, pb: 2 }}>
           {readOnly ? (
             <>
-              <Button onClick={onClose}>Cerrar</Button>
-              <Button color="error" onClick={onDelete}>Eliminar</Button>
-              <Button variant="contained" onClick={onEdit}>Editar</Button>
+              <Button onClick={onClose}>Close</Button>
+              <Button color="error" onClick={onDelete}>Delete</Button>
+              <Button variant="contained" onClick={onEdit}>Edit</Button>
             </>
           ) : (
             <>
-              <Button onClick={onClose} disabled={saving}>Cancelar</Button>
+              <Button onClick={onClose} disabled={saving}>Cancel</Button>
               <Button type="submit" variant="contained" disabled={saving || loading} startIcon={saving ? <CircularProgress size={16} color="inherit" /> : null}>
-                {mode === 'create' ? 'Crear' : 'Guardar'}
+                {mode === 'create' ? 'Create' : 'Save'}
               </Button>
             </>
           )}
@@ -273,11 +273,11 @@ function PictureBlock({ readOnly, item, file, removed, error, onPick, onRemove }
 
   const existing = !removed && item?.picture ? pictureSrc(item) : ''
   const src = previewUrl || existing
-  const alt = item?.text ? `Foto de ${item.text}` : 'Foto'
+  const alt = item?.text ? `Photo of ${item.text}` : 'Photo'
 
   return (
     <Box sx={{ mb: 1 }}>
-      <Typography variant="caption" color="text.secondary">Foto</Typography>
+      <Typography variant="caption" color="text.secondary">Photo</Typography>
       {src ? (
         existing && !previewUrl ? (
           <Box component="a" href={existing} target="_blank" rel="noreferrer" sx={{ display: 'inline-block', mt: 0.5 }}>
@@ -287,15 +287,15 @@ function PictureBlock({ readOnly, item, file, removed, error, onPick, onRemove }
           <Box component="img" src={src} alt={alt} sx={{ display: 'block', mt: 0.5, maxWidth: '100%', maxHeight: 280, objectFit: 'contain', borderRadius: 1, bgcolor: 'action.hover' }} />
         )
       ) : (
-        <Typography sx={{ mt: 0.5 }}>{readOnly ? '—' : 'Sin foto'}</Typography>
+        <Typography sx={{ mt: 0.5 }}>{readOnly ? '—' : 'No photo'}</Typography>
       )}
       {readOnly ? null : (
         <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
           <Button type="button" size="small" variant="outlined" onClick={() => inputRef.current && inputRef.current.click()}>
-            {src ? 'Cambiar foto' : 'Elegir foto'}
+            {src ? 'Change photo' : 'Choose photo'}
           </Button>
           {src ? (
-            <Button type="button" size="small" color="error" onClick={onRemove}>Quitar foto</Button>
+            <Button type="button" size="small" color="error" onClick={onRemove}>Remove photo</Button>
           ) : null}
           <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" hidden onChange={onPick} />
         </Stack>

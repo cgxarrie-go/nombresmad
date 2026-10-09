@@ -65,14 +65,14 @@ func (p *Pictures) Upload(id int, data []byte) (model.Item, error) {
 		return model.Item{}, err
 	}
 	if len(data) == 0 {
-		return model.Item{}, model.Invalid("Falta el archivo de imagen")
+		return model.Item{}, model.Invalid("Image file is missing")
 	}
 	if len(data) > MaxPictureBytes {
-		return model.Item{}, model.Invalid("La imagen es demasiado grande (máximo 8 MB)")
+		return model.Item{}, model.Invalid("The image is too large (maximum 8 MB)")
 	}
 	ext, ok := imageExt(data)
 	if !ok {
-		return model.Item{}, model.Invalid("Formato no admitido. Usa JPG, PNG, GIF o WebP")
+		return model.Item{}, model.Invalid("Unsupported format. Use JPG, PNG, GIF, or WebP")
 	}
 	name := fmt.Sprintf("%d-%d%s", id, time.Now().UnixNano(), ext)
 	if err := p.files.Save(name, data); err != nil {

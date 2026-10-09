@@ -57,21 +57,21 @@ import {
 
 const COLUMNS = [
   { id: 'id', label: 'Nº', width: 64 },
-  { id: 'picture', label: 'Foto', width: 56, sortable: false },
-  { id: 'text', label: 'Nombre', minWidth: 140 },
-  { id: 'group', label: 'Grupo', minWidth: 140 },
-  { id: 'woodType', label: 'Madera', minWidth: 120 },
-  { id: 'size', label: 'Tamaño', width: 84 },
-  { id: 'deliveredTo', label: 'Entregado a', minWidth: 140 },
-  { id: 'deliveryDate', label: 'Entrega', width: 112 },
-  { id: 'price', label: 'Precio', width: 80, align: 'right' },
-  { id: 'deliveredWithBox', label: 'Caja', width: 80 },
+  { id: 'picture', label: 'Photo', width: 56, sortable: false },
+  { id: 'text', label: 'Name', minWidth: 140 },
+  { id: 'group', label: 'Group', minWidth: 140 },
+  { id: 'woodType', label: 'Wood', minWidth: 120 },
+  { id: 'size', label: 'Size', width: 84 },
+  { id: 'deliveredTo', label: 'Delivered to', minWidth: 140 },
+  { id: 'deliveryDate', label: 'Delivery', width: 112 },
+  { id: 'price', label: 'Price', width: 80, align: 'right' },
+  { id: 'deliveredWithBox', label: 'Box', width: 80 },
 ]
 
 const EMPTY_PAGE = { items: [], page: 1, pageSize: PAGE_SIZE, total: 0, totalPages: 0 }
 
 function cellText(item, column) {
-  if (column === 'deliveredWithBox') return item.deliveredWithBox ? 'Sí' : 'No'
+  if (column === 'deliveredWithBox') return item.deliveredWithBox ? 'Yes' : 'No'
   if (column === 'price') return item.price ?? 0
   const value = item[column]
   return value === '' || value == null ? '—' : value
@@ -200,9 +200,9 @@ export default function App({ username, onLogout }) {
         } else if (picture?.remove && editor.mode !== 'create') {
           await deletePicture(saved.id)
         }
-        notify('success', editor.mode === 'create' ? 'Nombre creado' : 'Cambios guardados')
+        notify('success', editor.mode === 'create' ? 'Name created' : 'Changes saved')
       } catch (err) {
-        notify('error', `El nombre se guardó, pero la foto no se pudo guardar. ${errorMessage(err)}`)
+        notify('error', `The name was saved, but the photo could not be saved. ${errorMessage(err)}`)
       }
       closeEditor()
       refresh()
@@ -215,14 +215,14 @@ export default function App({ username, onLogout }) {
 
   function askDelete(item) {
     setConfirm({
-      title: 'Eliminar nombre',
-      body: `¿Eliminar «${item.text || item.id}»? Esta acción no se puede deshacer.`,
-      confirmLabel: 'Eliminar',
+      title: 'Delete name',
+      body: `Delete “${item.text || item.id}”? This action cannot be undone.`,
+      confirmLabel: 'Delete',
       danger: true,
       run: async () => {
         await deleteItem(item.id)
         if (editor?.item?.id === item.id) closeEditor()
-        notify('success', 'Nombre eliminado')
+        notify('success', 'Name deleted')
         refresh()
       },
     })
@@ -231,13 +231,13 @@ export default function App({ username, onLogout }) {
   function askImport() {
     setMenuAnchor(null)
     setConfirm({
-      title: 'Importar NoMad.json',
-      body: 'Se sustituyen todos los nombres por el contenido de NoMad.json. Las fotos guardadas se eliminan.',
-      confirmLabel: 'Importar',
+      title: 'Import initial_load.json',
+      body: 'All names will be replaced with the contents of initial_load.json. Saved photos will be removed.',
+      confirmLabel: 'Import',
       danger: true,
       run: async () => {
         await importData()
-        notify('success', 'Datos importados')
+        notify('success', 'Data imported')
         refresh()
       },
     })
@@ -247,7 +247,7 @@ export default function App({ username, onLogout }) {
     setMenuAnchor(null)
     try {
       await migrateDb()
-      notify('success', 'Base de datos actualizada')
+      notify('success', 'Database updated')
     } catch (err) {
       notify('error', errorMessage(err))
     }
@@ -273,18 +273,18 @@ export default function App({ username, onLogout }) {
   function actionButtons(item) {
     return (
       <>
-        <Tooltip title="Ver">
-          <IconButton size="small" aria-label={`Ver ${item.text}`} onClick={() => openExisting('view', item)}>
+        <Tooltip title="View">
+          <IconButton size="small" aria-label={`View ${item.text}`} onClick={() => openExisting('view', item)}>
             <VisibilityOutlinedIcon fontSize="small" />
           </IconButton>
         </Tooltip>
-        <Tooltip title="Editar">
-          <IconButton size="small" aria-label={`Editar ${item.text}`} onClick={() => openExisting('edit', item)}>
+        <Tooltip title="Edit">
+          <IconButton size="small" aria-label={`Edit ${item.text}`} onClick={() => openExisting('edit', item)}>
             <EditOutlinedIcon fontSize="small" />
           </IconButton>
         </Tooltip>
-        <Tooltip title="Eliminar">
-          <IconButton size="small" color="error" aria-label={`Eliminar ${item.text}`} onClick={() => askDelete(item)}>
+        <Tooltip title="Delete">
+          <IconButton size="small" color="error" aria-label={`Delete ${item.text}`} onClick={() => askDelete(item)}>
             <DeleteOutlineIcon fontSize="small" />
           </IconButton>
         </Tooltip>
@@ -303,15 +303,15 @@ export default function App({ username, onLogout }) {
           <Box>
             <Typography variant="h4" component="h1">NombresMad</Typography>
             <Typography variant="body2" color="text.secondary">
-              Nombres en madera · {pageData.total.toLocaleString('es-ES')} en total
+              Wood names · {pageData.total.toLocaleString('en-US')} total
               {pageData.total > 0 ? ` · ${from}–${to}` : ''}
             </Typography>
           </Box>
           <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-            <Button variant="outlined" onClick={() => navigate('/')}>Galería</Button>
-            <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>Nuevo</Button>
-            <Button variant="outlined" onClick={(event) => setMenuAnchor(event.currentTarget)}>Mantenimiento</Button>
-            <Tooltip title={username ? `Salir (${username})` : 'Salir'}>
+            <Button variant="outlined" onClick={() => navigate('/')}>Gallery</Button>
+            <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>New</Button>
+            <Button variant="outlined" onClick={(event) => setMenuAnchor(event.currentTarget)}>Maintenance</Button>
+            <Tooltip title={username ? `Sign out (${username})` : 'Sign out'}>
               <IconButton
                 aria-label={username ? `Salir (${username})` : 'Salir'}
                 onClick={onLogout}
@@ -322,8 +322,8 @@ export default function App({ username, onLogout }) {
             </Tooltip>
           </Stack>
           <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={() => setMenuAnchor(null)}>
-            <MenuItem onClick={runMigrate}>Actualizar base de datos</MenuItem>
-            <MenuItem onClick={askImport}>Importar NoMad.json</MenuItem>
+            <MenuItem onClick={runMigrate}>Update database</MenuItem>
+            <MenuItem onClick={askImport}>Import initial_load.json</MenuItem>
           </Menu>
         </Box>
 
@@ -331,8 +331,8 @@ export default function App({ username, onLogout }) {
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1.5fr 1fr 1fr 140px 150px' }, gap: 1.5, alignItems: 'center' }}>
             <TextField
               size="small"
-              label="Buscar"
-              placeholder="Nombre, grupo, madera, entrega…"
+              label="Search"
+              placeholder="Name, group, wood, delivery…"
               value={qInput}
               onChange={(event) => setQInput(event.target.value)}
               InputProps={{
@@ -346,46 +346,46 @@ export default function App({ username, onLogout }) {
               options={options.groups}
               inputValue={groupInput}
               onInputChange={(_, value) => setGroupInput(value)}
-              renderInput={(params) => <TextField {...params} size="small" label="Grupo" />}
+              renderInput={(params) => <TextField {...params} size="small" label="Group" />}
             />
             <TextField
               select
               size="small"
-              label="Madera"
+              label="Wood"
               value={query.woodType}
               onChange={(event) => setFilter({ woodType: event.target.value })}
             >
-              <MenuItem value="">Todas</MenuItem>
+              <MenuItem value="">All</MenuItem>
               {options.woodTypes.map((wood) => <MenuItem key={wood} value={wood}>{wood}</MenuItem>)}
             </TextField>
             <TextField
               select
               size="small"
-              label="Entregado"
+              label="Delivered"
               value={query.delivered}
               onChange={(event) => setFilter({ delivered: event.target.value })}
               sx={{ minWidth: 130 }}
             >
-              <MenuItem value="">Todos</MenuItem>
-              <MenuItem value="true">Sí</MenuItem>
+              <MenuItem value="">All</MenuItem>
+              <MenuItem value="true">Yes</MenuItem>
               <MenuItem value="false">No</MenuItem>
             </TextField>
             <TextField
               select
               size="small"
-              label="Caja"
+              label="Box"
               value={query.deliveredWithBox}
               onChange={(event) => setFilter({ deliveredWithBox: event.target.value })}
               sx={{ minWidth: 130 }}
             >
-              <MenuItem value="">Todas</MenuItem>
-              <MenuItem value="true">Con caja</MenuItem>
-              <MenuItem value="false">Sin caja</MenuItem>
+              <MenuItem value="">All</MenuItem>
+              <MenuItem value="true">With box</MenuItem>
+              <MenuItem value="false">Without box</MenuItem>
             </TextField>
           </Box>
           {filtersActive ? (
             <Button size="small" startIcon={<FilterAltOffIcon />} onClick={clearFilters} sx={{ mt: 1 }}>
-              Limpiar filtros
+              Clear filters
             </Button>
           ) : null}
         </Paper>
@@ -397,7 +397,7 @@ export default function App({ username, onLogout }) {
             <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow>
-                  <TableCell className="actions-cell actions-compact">Acciones</TableCell>
+                  <TableCell className="actions-cell actions-compact">Actions</TableCell>
                   {COLUMNS.map((column) => (
                     <TableCell key={column.id} align={column.align} sx={{ minWidth: column.minWidth, width: column.width }}>
                       {column.sortable === false ? column.label : (
@@ -411,14 +411,14 @@ export default function App({ username, onLogout }) {
                       )}
                     </TableCell>
                   ))}
-                  <TableCell className="actions-cell actions-wide">Acciones</TableCell>
+                  <TableCell className="actions-cell actions-wide">Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {!loading && pageData.items.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={COLUMNS.length + 2} sx={{ py: 6, textAlign: 'center', color: 'text.secondary' }}>
-                      {filtersActive ? 'Ningún nombre coincide con los filtros.' : 'Todavía no hay nombres.'}
+                      {filtersActive ? 'No names match the filters.' : 'There are no names yet.'}
                     </TableCell>
                   </TableRow>
                 ) : pageData.items.map((item) => (
@@ -439,7 +439,7 @@ export default function App({ username, onLogout }) {
                             />
                           ) : '—'
                         ) : column.id === 'deliveredWithBox' ? (
-                          <Chip size="small" variant="outlined" label={item.deliveredWithBox ? 'Sí' : 'No'} color={item.deliveredWithBox ? 'success' : 'default'} />
+                          <Chip size="small" variant="outlined" label={item.deliveredWithBox ? 'Yes' : 'No'} color={item.deliveredWithBox ? 'success' : 'default'} />
                         ) : column.id === 'text' ? (
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>{cellText(item, column.id)}</Typography>
                         ) : cellText(item, column.id)}
@@ -460,8 +460,8 @@ export default function App({ username, onLogout }) {
             onPageChange={(_, page) => setQuery((prev) => ({ ...prev, page: page + 1 }))}
             rowsPerPage={PAGE_SIZE}
             rowsPerPageOptions={[PAGE_SIZE]}
-            labelRowsPerPage="Por página"
-            labelDisplayedRows={({ from: rowFrom, to: rowTo, count }) => `${rowFrom}–${rowTo} de ${count}`}
+            labelRowsPerPage="Per page"
+            labelDisplayedRows={({ from: rowFrom, to: rowTo, count }) => `${rowFrom}–${rowTo} of ${count}`}
           />
         </Paper>
       </Container>
@@ -485,7 +485,7 @@ export default function App({ username, onLogout }) {
           <Typography>{confirm?.body}</Typography>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setConfirm(null)} disabled={confirming}>Cancelar</Button>
+          <Button onClick={() => setConfirm(null)} disabled={confirming}>Cancel</Button>
           <Button variant="contained" color={confirm?.danger ? 'error' : 'primary'} onClick={runConfirm} disabled={confirming}>
             {confirm?.confirmLabel}
           </Button>
