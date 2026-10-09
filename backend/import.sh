@@ -7,7 +7,7 @@ export PGUSER="${PGUSER:-postgres}"
 export PGPASSWORD="${PGPASSWORD:-postgres}"
 export PGDATABASE="${PGDATABASE:-nombresmad}"
 echo "Applying migrations..."
-psql -f migrations.sql || true
+psql -f migrations/migrations.sql || true
 echo "Calling backend /api/migrate"
 curl -X POST http://localhost:8080/api/migrate || true
 echo "Calling backend /api/import"

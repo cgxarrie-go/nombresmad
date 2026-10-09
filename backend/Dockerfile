@@ -12,6 +12,7 @@ WORKDIR /app
 
 COPY --from=builder /app/main .
 COPY --from=builder /app/seed_data ./seed_data
+COPY --from=builder /app/migrations/migrations.sql ./migrations/migrations.sql
 COPY --from=builder /app/entrypoint.sh .
 
 # grant execute permission to the entrypoint script

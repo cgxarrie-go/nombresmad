@@ -83,7 +83,7 @@ func readNomadFile() (string, []model.Item, error) {
 }
 
 func readMigrations() ([]byte, error) {
-	return os.ReadFile(resolveExisting("migrations.sql"))
+	return os.ReadFile(resolveExisting(filepath.Join("migrations", "migrations.sql")))
 }
 
 func decodeJSON(data []byte, out any) error {
