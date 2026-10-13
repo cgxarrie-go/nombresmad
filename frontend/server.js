@@ -4,7 +4,23 @@ const https = require('https')
 const path = require('path')
 
 const buildRoot = path.join(__dirname, 'build')
-const backend = new URL(process.env.API_PROXY_TARGET || 'http://localhost:8080')
+const backend = backendUrl(process.env.API_PROXY_TARGET)
+
+function backendUrl(raw) {
+  const value = (raw || 'http://localhost:8080').trim()
+  const hasScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(value)
+  try {
+    const url = new URL(hasScheme ? value : `http://${value}`)
+    if (!url.hostname) throw new Error('missing host')
+    if (!hasScheme && !url.port) url.port = '8080'
+    return url
+  } catch {
+    console.error(
+      `API_PROXY_TARGET must be an absolute URL or host:port (got ${JSON.stringify(value)}). Example: http://backend.railway.internal:8080`
+    )
+    process.exit(1)
+  }
+}
 const contentTypes = {
   '.css': 'text/css; charset=utf-8',
   '.html': 'text/html; charset=utf-8',

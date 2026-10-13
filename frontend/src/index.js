@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Box, CssBaseline, ThemeProvider, Typography, createTheme } from '@mui/material'
 import App from './App'
+import Gallery from './Gallery'
 import Login from './Login'
 import { fetchSession, logout } from './api'
 import { navigate, usePath } from './route'
@@ -75,15 +76,7 @@ function AdminGate() {
 
 function Root() {
   const path = usePath()
-  return path === '/lista' ? <AdminGate /> : <Landing />
-}
-
-function Landing() {
-  return (
-    <Box component="main" className="landing">
-      <Typography component="h1" className="landing-title">NombresMad</Typography>
-    </Box>
-  )
+  return path === '/lista' ? <AdminGate /> : <Gallery />
 }
 
 const root = createRoot(document.getElementById('root'))
