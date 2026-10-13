@@ -120,7 +120,7 @@ export default function Gallery() {
   }, [])
 
   async function signOut() {
-    try { await logout() } catch { /* the cookie is cleared locally anyway */ }
+    await logout()
     setSession(null)
   }
 

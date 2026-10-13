@@ -6,6 +6,14 @@
     "version": "1.0.0"
   },
   "basePath": "/",
+  "securityDefinitions": {
+    "Bearer": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header",
+      "description": "Bearer session token returned by POST /api/login"
+    }
+  },
   "consumes": ["application/json"],
   "produces": ["application/json"],
   "tags": [
@@ -17,7 +25,7 @@
       "post": {
         "tags": ["admin"],
         "summary": "Log in",
-        "description": "Checks ADMIN_USER and ADMIN_PASSWORD and sets an HttpOnly session cookie for 12 hours.",
+        "description": "Checks ADMIN_USER and ADMIN_PASSWORD and returns a bearer token valid for 12 hours. Send it as Authorization: Bearer <token> on later requests.",
         "consumes": ["application/json"],
         "produces": ["application/json"],
         "parameters": [{
@@ -33,7 +41,7 @@
           }
         }],
         "responses": {
-          "200": {"description": "Logged in", "schema": {"type": "object", "properties": {"username": {"type": "string"}}}},
+          "200": {"description": "Logged in", "schema": {"type": "object", "properties": {"username": {"type": "string"}, "token": {"type": "string"}}}},
           "401": {"description": "Wrong username or password", "schema": {"type": "string"}}
         }
       }
@@ -42,7 +50,7 @@
       "post": {
         "tags": ["admin"],
         "summary": "Log out",
-        "description": "Clears the session cookie.",
+        "description": "Ends the browser session. The client must discard the bearer token.",
         "produces": ["application/json"],
         "responses": {
           "200": {"description": "Logged out", "schema": {"$ref": "#/definitions/Status"}}
@@ -53,6 +61,8 @@
       "get": {
         "tags": ["admin"],
         "summary": "Current session",
+        "description": "Requires Authorization: Bearer <token>.",
+        "security": [{"Bearer": []}],
         "produces": ["application/json"],
         "responses": {
           "200": {"description": "Logged in", "schema": {"type": "object", "properties": {"username": {"type": "string"}}}},

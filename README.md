@@ -42,7 +42,7 @@ Frontend backend configuration:
 Railway deployment:
 
 - Set `API_PROXY_TARGET` on the frontend service to `http://<backend-private-domain>:<backend-port>`. Use the backend's Railway private domain and its assigned `PORT`; do not append `/api`.
-- The production frontend proxies `/api` through this variable, so the backend can remain private and session cookies stay same-origin.
+- The production frontend proxies `/api` through this variable, so the backend can remain private. The browser keeps the admin session token and sends it as `Authorization: Bearer`.
 - The backend listens on Railway's `PORT` and defaults to `8080` for local development and Docker Compose.
 
 # nombresmad

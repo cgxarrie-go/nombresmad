@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	sessionCookie = "nombresmad_session"
-	sessionTTL    = 12 * time.Hour
+	legacySessionCookie = "nombresmad_session"
+	sessionTTL          = 12 * time.Hour
 )
 
 func (s *Server) login(w http.ResponseWriter, r *http.Request) {
@@ -29,8 +29,9 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Incorrect username or password", http.StatusUnauthorized)
 		return
 	}
-	setSessionCookie(w, s.auth.Sign(s.auth.Username(), time.Now().Add(sessionTTL)))
-	writeJSON(w, map[string]string{"username": s.auth.Username()})
+	clearLegacySessionCookie(w)
+	token := s.auth.Sign(s.auth.Username(), time.Now().Add(sessionTTL))
+	writeJSON(w, map[string]string{"username": s.auth.Username(), "token": token})
 }
 
 func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
@@ -38,7 +39,7 @@ func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	clearSessionCookie(w)
+	clearLegacySessionCookie(w)
 	writeJSON(w, map[string]string{"status": "logged out"})
 }
 
@@ -64,27 +65,24 @@ func (s *Server) requireAuth(w http.ResponseWriter, r *http.Request) bool {
 }
 
 func (s *Server) sessionUser(r *http.Request) (string, bool) {
-	cookie, err := r.Cookie(sessionCookie)
-	if err != nil {
+	token := bearerToken(r)
+	if token == "" {
 		return "", false
 	}
-	return s.auth.Read(cookie.Value, time.Now())
+	return s.auth.Read(token, time.Now())
 }
 
-func setSessionCookie(w http.ResponseWriter, token string) {
-	http.SetCookie(w, &http.Cookie{
-		Name:     sessionCookie,
-		Value:    token,
-		Path:     "/",
-		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-		MaxAge:   int(sessionTTL.Seconds()),
-	})
+func bearerToken(r *http.Request) string {
+	scheme, token, ok := strings.Cut(strings.TrimSpace(r.Header.Get("Authorization")), " ")
+	if !ok || !strings.EqualFold(scheme, "Bearer") {
+		return ""
+	}
+	return strings.TrimSpace(token)
 }
 
-func clearSessionCookie(w http.ResponseWriter) {
+func clearLegacySessionCookie(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     sessionCookie,
+		Name:     legacySessionCookie,
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,

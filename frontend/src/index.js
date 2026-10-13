@@ -66,7 +66,7 @@ function AdminGate() {
     <App
       username={session.username}
       onLogout={async () => {
-        try { await logout() } catch { /* the cookie is cleared locally anyway */ }
+        await logout()
         setSession(null)
         navigate('/')
       }}

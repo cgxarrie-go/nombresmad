@@ -1,13 +1,43 @@
 import axios from 'axios'
 
 const API_BASE_URL = (process.env.REACT_APP_API_URL || '/api').replace(/\/+$/, '')
+const TOKEN_KEY = 'nombresmad_token'
+
+export function getToken() {
+  try {
+    return localStorage.getItem(TOKEN_KEY) || ''
+  } catch {
+    return ''
+  }
+}
+
+export function setToken(token) {
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token)
+    else localStorage.removeItem(TOKEN_KEY)
+  } catch {
+    // storage can be blocked; the in-memory request still fails closed
+  }
+}
 
 export const api = axios.create({ baseURL: API_BASE_URL })
+
+api.interceptors.request.use((config) => {
+  const token = getToken()
+  if (token) {
+    config.headers = config.headers || {}
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
 
 api.interceptors.response.use(
   (response) => response,
   (err) => {
-    if (err?.response?.status === 401 && window.location.pathname === '/lista') {
+    const url = String(err?.config?.url || '')
+    const isLogin = url.endsWith('/login')
+    if (err?.response?.status === 401 && !isLogin) {
+      setToken('')
       window.dispatchEvent(new Event('nombresmad-unauthorized'))
     }
     return Promise.reject(err)
@@ -101,17 +131,33 @@ export async function migrateDb() {
 }
 
 export async function fetchSession() {
+  if (!getToken()) {
+    const error = new Error('unauthorized')
+    error.response = { status: 401 }
+    throw error
+  }
   const { data } = await api.get('/session')
-  return data
+  return { username: data.username }
 }
 
 export async function login(username, password) {
   const { data } = await api.post('/login', { username, password })
-  return data
+  if (!data?.token) {
+    const error = new Error('missing token')
+    error.response = { data: 'The server did not return a session token' }
+    throw error
+  }
+  setToken(data.token)
+  return { username: data.username }
 }
 
 export async function logout() {
-  await api.post('/logout')
+  setToken('')
+  try {
+    await api.post('/logout')
+  } catch {
+    // the token is already cleared locally
+  }
 }
 
 export function errorMessage(err) {
