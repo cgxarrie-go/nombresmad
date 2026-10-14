@@ -54,7 +54,7 @@ const cornerIconSx = {
 const EMPTY_PAGE = { items: [], page: 1, pageSize: PAGE_SIZE, total: 0, totalPages: 0 }
 
 function caption(item) {
-  return [item.size, item.woodType].filter((value) => value).join(' · ') || '—'
+  return [item.woodType, item.size].filter((value) => value).join(' · ') || '—'
 }
 
 export default function Gallery() {
@@ -274,9 +274,9 @@ export default function Gallery() {
                     loading="lazy"
                     sx={{ display: 'block', width: '100%', aspectRatio: '4 / 3', objectFit: 'cover', bgcolor: 'action.hover' }}
                   />
-                  <Box sx={{ px: 1.5, py: 1.25 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 700 }} noWrap>{item.text || '—'}</Typography>
-                    <Typography variant="caption" color="text.secondary" noWrap>{caption(item)}</Typography>
+                  <Box sx={{ px: 1.5, py: 1.25, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 1 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700, minWidth: 0 }} noWrap>{item.text || '—'}</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }} noWrap>{caption(item)}</Typography>
                   </Box>
                 </Paper>
               ))}
@@ -316,9 +316,9 @@ export default function Gallery() {
               alt={`Photo of ${current.text || current.id}`}
               sx={{ display: 'block', width: '100%', maxHeight: '75vh', objectFit: 'contain' }}
             />
-            <Box sx={{ px: 2.5, py: 1.5, color: '#fffaf3' }}>
-              <Typography sx={{ fontWeight: 700 }}>{current.text || '—'}</Typography>
-              <Typography variant="body2" sx={{ opacity: 0.85 }}>Nº {current.id} · {caption(current)}</Typography>
+            <Box sx={{ px: 2.5, py: 1.5, color: '#fffaf3', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 2 }}>
+              <Typography sx={{ fontWeight: 700, minWidth: 0 }} noWrap>{current.text || '—'}</Typography>
+              <Typography variant="body2" sx={{ opacity: 0.85, flexShrink: 0 }} noWrap>{caption(current)}</Typography>
             </Box>
           </Box>
         ) : null}
