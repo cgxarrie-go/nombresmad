@@ -20,7 +20,7 @@ export default function Login({ onSuccess }) {
       const session = await login(username.trim(), password)
       onSuccess(session)
     } catch (err) {
-      setError(err?.response?.status === 401 ? 'Incorrect username or password' : errorMessage(err))
+      setError(err?.response?.status === 401 ? 'Usuario o contraseña incorrectos' : errorMessage(err))
     } finally {
       setSubmitting(false)
     }
@@ -30,13 +30,13 @@ export default function Login({ onSuccess }) {
     <Box className="app-shell" sx={{ display: 'flex', alignItems: 'center' }}>
       <Container maxWidth="xs" sx={{ py: 6 }}>
         <Paper sx={{ p: 3 }}>
-          <Typography variant="h4" component="h1" sx={{ mb: 0.5 }}>Administration</Typography>
+          <Typography variant="h4" component="h1" sx={{ mb: 0.5 }}>Administración</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Sign in to create, edit, and delete names.
+            Inicia sesión para crear, editar y eliminar nombres.
           </Typography>
           <Box component="form" onSubmit={handleSubmit} sx={{ display: 'grid', gap: 1.5 }}>
             <TextField
-              label="Username"
+              label="Usuario"
               value={username}
               onChange={(event) => setUsername(event.target.value)}
               autoComplete="username"
@@ -45,7 +45,7 @@ export default function Login({ onSuccess }) {
               size="small"
             />
             <TextField
-              label="Password"
+              label="Contraseña"
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
@@ -57,7 +57,7 @@ export default function Login({ onSuccess }) {
                   <InputAdornment position="end">
                     <IconButton
                       type="button"
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                       aria-pressed={showPassword}
                       onClick={() => setShowPassword((visible) => !visible)}
                       onMouseDown={(event) => event.preventDefault()}
@@ -71,8 +71,8 @@ export default function Login({ onSuccess }) {
               }}
             />
             {error ? <Alert severity="error">{error}</Alert> : null}
-            <Button type="submit" variant="contained" disabled={submitting}>Sign in</Button>
-            <Button type="button" onClick={() => navigate('/')}>Back to gallery</Button>
+            <Button type="submit" variant="contained" disabled={submitting}>Entrar</Button>
+            <Button type="button" onClick={() => navigate('/')}>Volver a la galería</Button>
           </Box>
         </Paper>
       </Container>

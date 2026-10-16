@@ -44,10 +44,10 @@ func (c *Catalog) Bootstrap() error {
 func (c *Catalog) Migrate() error {
 	b, err := readMigrations()
 	if err != nil {
-		return fmt.Errorf("read migrations: %w", err)
+		return fmt.Errorf("no se pudieron leer las migraciones: %w", err)
 	}
 	if err := c.items.Exec(string(b)); err != nil {
-		return fmt.Errorf("apply migrations: %w", err)
+		return fmt.Errorf("no se pudieron aplicar las migraciones: %w", err)
 	}
 	return nil
 }
@@ -57,7 +57,7 @@ func (c *Catalog) Migrate() error {
 func (c *Catalog) SeedIfEmpty() error {
 	n, err := c.items.Count()
 	if err != nil {
-		return fmt.Errorf("count items: %w", err)
+		return fmt.Errorf("no se pudo contar los nombres: %w", err)
 	}
 	if n > 0 {
 		log.Printf("database already has %d items; using stored data", n)

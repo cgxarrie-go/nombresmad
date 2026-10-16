@@ -49,15 +49,15 @@ func (f *flexString) UnmarshalJSON(b []byte) error {
 func readNomadFile() (string, []model.Item, error) {
 	path := resolveNomadFile()
 	if path == "" {
-		return "", nil, fmt.Errorf("initial_load.json not found (set NOMAD_JSON or place the file in backend/seed_data)")
+		return "", nil, fmt.Errorf("no se encontró initial_load.json (define NOMAD_JSON o coloca el archivo en backend/seed_data)")
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return "", nil, fmt.Errorf("read %s: %w", path, err)
+		return "", nil, fmt.Errorf("no se pudo leer %s: %w", path, err)
 	}
 	var raw []nomadItem
 	if err := decodeJSON(data, &raw); err != nil {
-		return "", nil, fmt.Errorf("parse %s: %w", path, err)
+		return "", nil, fmt.Errorf("no se pudo interpretar %s: %w", path, err)
 	}
 	items := make([]model.Item, 0, len(raw))
 	for _, r := range raw {

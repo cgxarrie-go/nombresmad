@@ -64,7 +64,7 @@ func writeErr(w http.ResponseWriter, err error) {
 		return
 	}
 	if errors.Is(err, model.ErrNotFound) {
-		http.Error(w, "not found", http.StatusNotFound)
+		http.Error(w, "no encontrado", http.StatusNotFound)
 		return
 	}
 	http.Error(w, err.Error(), http.StatusInternalServerError)

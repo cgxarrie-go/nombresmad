@@ -3,7 +3,7 @@ package model
 import "errors"
 
 // ErrNotFound is returned when an item row does not exist.
-var ErrNotFound = errors.New("not found")
+var ErrNotFound = errors.New("no encontrado")
 
 // InvalidError is a rejected request that did not touch storage.
 type InvalidError struct {

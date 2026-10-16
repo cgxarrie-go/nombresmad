@@ -144,7 +144,7 @@ export async function login(username, password) {
   const { data } = await api.post('/login', { username, password })
   if (!data?.token) {
     const error = new Error('missing token')
-    error.response = { data: 'The server did not return a session token' }
+    error.response = { data: 'El servidor no devolvió un token de sesión' }
     throw error
   }
   setToken(data.token)
@@ -163,6 +163,6 @@ export async function logout() {
 export function errorMessage(err) {
   const data = err?.response?.data
   if (typeof data === 'string' && data.trim()) return data.trim()
-  if (err?.message === 'Network Error') return 'No connection to the server'
-  return 'The operation could not be completed'
+  if (err?.message === 'Network Error') return 'No hay conexión con el servidor'
+  return 'No se pudo completar la operación'
 }

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Box, CssBaseline, ThemeProvider, Typography, createTheme } from '@mui/material'
+import { esES } from '@mui/material/locale'
 import App from './App'
 import Gallery from './Gallery'
 import Login from './Login'
@@ -36,7 +37,7 @@ const theme = createTheme({
       },
     },
   },
-})
+}, esES)
 
 function AdminGate() {
   const [session, setSession] = useState(undefined)

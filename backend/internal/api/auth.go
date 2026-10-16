@@ -14,7 +14,7 @@ const (
 
 func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		http.Error(w, "método no permitido", http.StatusMethodNotAllowed)
 		return
 	}
 	var body struct {
@@ -22,11 +22,11 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		Password string `json:"password"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		http.Error(w, "invalid JSON", http.StatusBadRequest)
+		http.Error(w, "JSON no válido", http.StatusBadRequest)
 		return
 	}
 	if !s.auth.Check(strings.TrimSpace(body.Username), body.Password) {
-		http.Error(w, "Incorrect username or password", http.StatusUnauthorized)
+		http.Error(w, "Usuario o contraseña incorrectos", http.StatusUnauthorized)
 		return
 	}
 	clearLegacySessionCookie(w)
@@ -36,7 +36,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		http.Error(w, "método no permitido", http.StatusMethodNotAllowed)
 		return
 	}
 	clearLegacySessionCookie(w)
@@ -45,12 +45,12 @@ func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) session(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		http.Error(w, "método no permitido", http.StatusMethodNotAllowed)
 		return
 	}
 	user, ok := s.sessionUser(r)
 	if !ok {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		http.Error(w, "no autorizado", http.StatusUnauthorized)
 		return
 	}
 	writeJSON(w, map[string]string{"username": user})
@@ -60,7 +60,7 @@ func (s *Server) requireAuth(w http.ResponseWriter, r *http.Request) bool {
 	if _, ok := s.sessionUser(r); ok {
 		return true
 	}
-	http.Error(w, "unauthorized", http.StatusUnauthorized)
+	http.Error(w, "no autorizado", http.StatusUnauthorized)
 	return false
 }
 

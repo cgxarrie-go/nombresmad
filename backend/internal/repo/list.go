@@ -46,14 +46,14 @@ func parseListQuery(values url.Values) (listQuery, error) {
 	if raw := values.Get("page"); raw != "" {
 		n, err := strconv.Atoi(raw)
 		if err != nil || n < 1 {
-			return lq, model.Invalid("invalid page")
+			return lq, model.Invalid("página no válida")
 		}
 		lq.Page = n
 	}
 	if raw := values.Get("pageSize"); raw != "" {
 		n, err := strconv.Atoi(raw)
 		if err != nil || n < 1 || n > 60 {
-			return lq, model.Invalid("invalid pageSize")
+			return lq, model.Invalid("tamaño de página no válido")
 		}
 		lq.PageSize = n
 	}
@@ -63,14 +63,14 @@ func parseListQuery(values url.Values) (listQuery, error) {
 	}
 	expr, ok := sortColumns[sortKey]
 	if !ok {
-		return lq, model.Invalid("invalid sort")
+		return lq, model.Invalid("ordenación no válida")
 	}
 	order := strings.ToLower(values.Get("order"))
 	if order == "" {
 		order = "asc"
 	}
 	if order != "asc" && order != "desc" {
-		return lq, model.Invalid("invalid order")
+		return lq, model.Invalid("orden no válido")
 	}
 	dir := "ASC"
 	if order == "desc" {
@@ -118,7 +118,7 @@ func parseListQuery(values url.Values) (listQuery, error) {
 	case "false":
 		where = append(where, `COALESCE(picture, '') = ''`)
 	default:
-		return lq, model.Invalid("invalid hasPicture")
+		return lq, model.Invalid("filtro de foto no válido")
 	}
 	switch values.Get("delivered") {
 	case "":
@@ -127,7 +127,7 @@ func parseListQuery(values url.Values) (listQuery, error) {
 	case "false":
 		where = append(where, `TRIM(COALESCE(deliveredTo, '')) = ''`)
 	default:
-		return lq, model.Invalid("invalid delivered")
+		return lq, model.Invalid("filtro de entrega no válido")
 	}
 	switch values.Get("deliveredWithBox") {
 	case "":
@@ -138,7 +138,7 @@ func parseListQuery(values url.Values) (listQuery, error) {
 		lq.Args = append(lq.Args, false)
 		where = append(where, fmt.Sprintf(`deliveredWithBox = $%d`, len(lq.Args)))
 	default:
-		return lq, model.Invalid("invalid deliveredWithBox")
+		return lq, model.Invalid("filtro de caja no válido")
 	}
 	if len(where) > 0 {
 		lq.WhereSQL = strings.Join(where, " AND ")

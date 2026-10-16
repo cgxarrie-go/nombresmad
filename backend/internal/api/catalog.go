@@ -7,7 +7,7 @@ import (
 
 func (s *Server) importNomad(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		http.Error(w, "método no permitido", http.StatusMethodNotAllowed)
 		return
 	}
 	if !s.requireAuth(w, r) {
@@ -24,7 +24,7 @@ func (s *Server) importNomad(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) migrate(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		http.Error(w, "método no permitido", http.StatusMethodNotAllowed)
 		return
 	}
 	if !s.requireAuth(w, r) {

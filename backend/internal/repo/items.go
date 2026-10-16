@@ -207,7 +207,7 @@ func (r *ItemRepo) Insert(items []model.Item, replace bool) error {
 	defer stmt.Close()
 	for _, it := range items {
 		if _, err := stmt.Exec(it.ID, it.DateCreated, it.Text, it.Size, it.Thicknesses, it.WoodType, it.DeliveryDate, it.DeliveredTo, it.Group, it.Price, it.DeliveredWithBox); err != nil {
-			return fmt.Errorf("insert id %d: %w", it.ID, err)
+			return fmt.Errorf("no se pudo insertar el id %d: %w", it.ID, err)
 		}
 	}
 	return tx.Commit()
@@ -229,7 +229,7 @@ func (r *ItemRepo) SyncIDSequence() error {
 			COALESCE((SELECT MAX(id) FROM items), 0) > 0
 		)`)
 	if err != nil {
-		return fmt.Errorf("sync id sequence: %w", err)
+		return fmt.Errorf("no se pudo sincronizar la secuencia de ids: %w", err)
 	}
 	return nil
 }

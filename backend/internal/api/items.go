@@ -24,7 +24,7 @@ func (s *Server) itemsCollection(w http.ResponseWriter, r *http.Request) {
 		}
 		var it model.Item
 		if err := json.NewDecoder(r.Body).Decode(&it); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, "JSON no válido", http.StatusBadRequest)
 			return
 		}
 		created, err := s.items.Create(it)
@@ -34,13 +34,13 @@ func (s *Server) itemsCollection(w http.ResponseWriter, r *http.Request) {
 		}
 		writeJSON(w, created)
 	default:
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		http.Error(w, "método no permitido", http.StatusMethodNotAllowed)
 	}
 }
 
 func (s *Server) options(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		http.Error(w, "método no permitido", http.StatusMethodNotAllowed)
 		return
 	}
 	woodTypes, groups, sizes, err := s.items.Options()
@@ -56,12 +56,12 @@ func (s *Server) item(w http.ResponseWriter, r *http.Request) {
 	rest := strings.Trim(strings.TrimPrefix(r.URL.Path, "/api/items/"), "/")
 	parts := strings.Split(rest, "/")
 	if len(parts) == 0 || parts[0] == "" {
-		http.Error(w, "missing id", http.StatusBadRequest)
+		http.Error(w, "falta el identificador", http.StatusBadRequest)
 		return
 	}
 	id, err := strconv.Atoi(parts[0])
 	if err != nil {
-		http.Error(w, "invalid id", http.StatusBadRequest)
+		http.Error(w, "identificador no válido", http.StatusBadRequest)
 		return
 	}
 	if len(parts) == 2 && parts[1] == "picture" {
@@ -69,7 +69,7 @@ func (s *Server) item(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(parts) != 1 {
-		http.Error(w, "not found", http.StatusNotFound)
+		http.Error(w, "no encontrado", http.StatusNotFound)
 		return
 	}
 	switch r.Method {
@@ -86,7 +86,7 @@ func (s *Server) item(w http.ResponseWriter, r *http.Request) {
 		}
 		var it model.Item
 		if err := json.NewDecoder(r.Body).Decode(&it); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, "JSON no válido", http.StatusBadRequest)
 			return
 		}
 		stored, err := s.items.Update(id, it)
@@ -105,6 +105,6 @@ func (s *Server) item(w http.ResponseWriter, r *http.Request) {
 		}
 		writeJSON(w, map[string]string{"status": "deleted"})
 	default:
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		http.Error(w, "método no permitido", http.StatusMethodNotAllowed)
 	}
 }
