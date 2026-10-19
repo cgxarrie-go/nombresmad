@@ -137,7 +137,25 @@ export async function fetchSession() {
     throw error
   }
   const { data } = await api.get('/session')
-  return { username: data.username }
+  return { username: data.username, mustChangePassword: Boolean(data.mustChangePassword) }
+}
+
+export function isEmail(value) {
+  const email = String(value || '').trim().toLowerCase()
+  const parts = email.split('@')
+  if (parts.length !== 2 || email.length > 254 || parts[0].length > 64) return false
+  const [local, domain] = parts
+  if (!local || !domain || local.startsWith('.') || local.endsWith('.') || local.includes('..')) return false
+  if (!/^[a-z0-9._%+-]+$/i.test(local)) return false
+  const labels = domain.split('.')
+  if (labels.length < 2 || labels[labels.length - 1].length < 2) return false
+  return labels.every((label) => (
+    label
+    && label.length <= 63
+    && !label.startsWith('-')
+    && !label.endsWith('-')
+    && /^[a-z0-9-]+$/i.test(label)
+  ))
 }
 
 export async function login(username, password) {
@@ -148,7 +166,32 @@ export async function login(username, password) {
     throw error
   }
   setToken(data.token)
-  return { username: data.username }
+  return { username: data.username, mustChangePassword: Boolean(data.mustChangePassword) }
+}
+
+export async function changePassword(currentPassword, newPassword) {
+  const { data } = await api.post('/account/password', { currentPassword, newPassword })
+  if (!data?.token) {
+    const error = new Error('missing token')
+    error.response = { data: 'El servidor no devolvió un token de sesión' }
+    throw error
+  }
+  setToken(data.token)
+  return { username: data.username, mustChangePassword: Boolean(data.mustChangePassword) }
+}
+
+export async function fetchAdmins() {
+  const { data } = await api.get('/admins')
+  return data.admins || []
+}
+
+export async function createAdmin(username) {
+  const { data } = await api.post('/admins', { username })
+  return data
+}
+
+export async function resetAdminPassword(username) {
+  await api.post('/admins/reset', { username })
 }
 
 export async function logout() {

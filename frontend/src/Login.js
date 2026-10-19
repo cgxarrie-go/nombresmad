@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Alert, Box, Button, Container, IconButton, InputAdornment, Paper, TextField, Typography } from '@mui/material'
 import Visibility from '@mui/icons-material/Visibility'
 import VisibilityOff from '@mui/icons-material/VisibilityOff'
-import { errorMessage, login } from './api'
+import { errorMessage, isEmail, login } from './api'
 import { navigate } from './route'
 
 export default function Login({ onSuccess }) {
@@ -14,8 +14,12 @@ export default function Login({ onSuccess }) {
 
   async function handleSubmit(event) {
     event.preventDefault()
-    setSubmitting(true)
     setError('')
+    if (!isEmail(username)) {
+      setError('Introduce un correo electrónico')
+      return
+    }
+    setSubmitting(true)
     try {
       const session = await login(username.trim(), password)
       onSuccess(session)
@@ -36,7 +40,8 @@ export default function Login({ onSuccess }) {
           </Typography>
           <Box component="form" onSubmit={handleSubmit} sx={{ display: 'grid', gap: 1.5 }}>
             <TextField
-              label="Usuario"
+              label="Correo"
+              type="email"
               value={username}
               onChange={(event) => setUsername(event.target.value)}
               autoComplete="username"

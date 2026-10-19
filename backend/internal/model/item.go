@@ -2,8 +2,11 @@ package model
 
 import "errors"
 
-// ErrNotFound is returned when an item row does not exist.
+// ErrNotFound is returned when a row does not exist.
 var ErrNotFound = errors.New("no encontrado")
+
+// ErrExists is returned when a unique admin username is already taken.
+var ErrExists = errors.New("ese usuario ya existe")
 
 // InvalidError is a rejected request that did not touch storage.
 type InvalidError struct {

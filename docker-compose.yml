@@ -26,7 +26,8 @@ services:
       PGUSER: postgres
       PGPASSWORD: postgres
       PGDATABASE: nombresmad
-      ADMIN_USER: admin
+      ADMIN_USER: admin@example.com
+      # Shared default password. First login and every reset must change it.
       ADMIN_PASSWORD: admin
       NOMAD_JSON: /app/seed_data/initial_load.json
     ports:

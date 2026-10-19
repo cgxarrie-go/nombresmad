@@ -28,6 +28,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/login", withCORS(s.login))
 	mux.HandleFunc("/api/logout", withCORS(s.logout))
 	mux.HandleFunc("/api/session", withCORS(s.session))
+	mux.HandleFunc("/api/account/password", withCORS(s.changePassword))
+	mux.HandleFunc("/api/admins", withCORS(s.admins))
+	mux.HandleFunc("/api/admins/reset", withCORS(s.resetAdminPassword))
 	mux.HandleFunc("/api/items", withCORS(s.itemsCollection))
 	mux.HandleFunc("/api/items/", withCORS(s.item))
 	mux.HandleFunc("/api/options", withCORS(s.options))
@@ -65,6 +68,10 @@ func writeErr(w http.ResponseWriter, err error) {
 	}
 	if errors.Is(err, model.ErrNotFound) {
 		http.Error(w, "no encontrado", http.StatusNotFound)
+		return
+	}
+	if errors.Is(err, model.ErrExists) {
+		http.Error(w, model.ErrExists.Error(), http.StatusConflict)
 		return
 	}
 	http.Error(w, err.Error(), http.StatusInternalServerError)

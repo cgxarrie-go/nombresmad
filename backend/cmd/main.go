@@ -35,8 +35,11 @@ func main() {
 	if err = pictures.EnsureDir(); err != nil {
 		log.Fatal(err)
 	}
-	auth, err := newAuth()
+	auth, err := newAuth(repo.NewAdminRepo(db))
 	if err != nil {
+		log.Fatal(err)
+	}
+	if err = auth.EnsureDefaultAdmin(os.Getenv("ADMIN_USER")); err != nil {
 		log.Fatal(err)
 	}
 
@@ -70,11 +73,7 @@ func getenv(key, fallback string) string {
 	return fallback
 }
 
-func newAuth() (*service.Auth, error) {
-	user := os.Getenv("ADMIN_USER")
-	if user == "" {
-		user = "admin"
-	}
+func newAuth(users service.AdminStore) (*service.Auth, error) {
 	password := os.Getenv("ADMIN_PASSWORD")
 	var secret []byte
 	if value := os.Getenv("ADMIN_SECRET"); value != "" {
@@ -86,7 +85,7 @@ func newAuth() (*service.Auth, error) {
 		}
 	}
 	if password == "" {
-		log.Println("ADMIN_PASSWORD is empty; admin login is disabled")
+		log.Println("ADMIN_PASSWORD is empty; default admin password and resets are disabled")
 	}
-	return service.NewAuth(user, password, secret), nil
+	return service.NewAuth(users, password, secret), nil
 }

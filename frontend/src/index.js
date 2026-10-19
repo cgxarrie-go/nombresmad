@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { Box, CssBaseline, ThemeProvider, Typography, createTheme } from '@mui/material'
 import { esES } from '@mui/material/locale'
 import App from './App'
+import ChangePassword from './ChangePassword'
 import Gallery from './Gallery'
 import Login from './Login'
 import { fetchSession, logout } from './api'
@@ -63,6 +64,18 @@ function AdminGate() {
     )
   }
   if (!session) return <Login onSuccess={setSession} />
+  if (session.mustChangePassword) {
+    return (
+      <ChangePassword
+        username={session.username}
+        onSuccess={setSession}
+        onCancel={async () => {
+          await logout()
+          navigate('/')
+        }}
+      />
+    )
+  }
   return (
     <App
       username={session.username}

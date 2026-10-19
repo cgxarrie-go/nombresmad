@@ -25,7 +25,7 @@
       "post": {
         "tags": ["admin"],
         "summary": "Log in",
-        "description": "Checks ADMIN_USER and ADMIN_PASSWORD and returns a bearer token valid for 12 hours. Send it as Authorization: Bearer <token> on later requests.",
+        "description": "Checks an email address and password against the admins table and returns a bearer token valid for 12 hours. Send it as Authorization: Bearer <token> on later requests. Usernames that are not email addresses are rejected. mustChangePassword is true when the account still has the default password.",
         "consumes": ["application/json"],
         "produces": ["application/json"],
         "parameters": [{
@@ -35,13 +35,13 @@
           "schema": {
             "type": "object",
             "properties": {
-              "username": {"type": "string"},
+              "username": {"type": "string", "format": "email"},
               "password": {"type": "string"}
             }
           }
         }],
         "responses": {
-          "200": {"description": "Logged in", "schema": {"type": "object", "properties": {"username": {"type": "string"}, "token": {"type": "string"}}}},
+          "200": {"description": "Logged in", "schema": {"$ref": "#/definitions/Session"}},
           "401": {"description": "Wrong username or password", "schema": {"type": "string"}}
         }
       }
@@ -65,8 +65,85 @@
         "security": [{"Bearer": []}],
         "produces": ["application/json"],
         "responses": {
-          "200": {"description": "Logged in", "schema": {"type": "object", "properties": {"username": {"type": "string"}}}},
+          "200": {"description": "Logged in", "schema": {"$ref": "#/definitions/Session"}},
           "401": {"description": "Not logged in", "schema": {"type": "string"}}
+        }
+      }
+    },
+    "/api/account/password": {
+      "post": {
+        "tags": ["admin"],
+        "summary": "Change the current admin password",
+        "description": "Allowed while a password change is required. Replaces the stored hash and returns a new bearer token. The previous token stops working.",
+        "security": [{"Bearer": []}],
+        "parameters": [{
+          "name": "body",
+          "in": "body",
+          "required": true,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "currentPassword": {"type": "string"},
+              "newPassword": {"type": "string", "minLength": 8}
+            }
+          }
+        }],
+        "responses": {
+          "200": {"description": "Password changed", "schema": {"$ref": "#/definitions/Session"}},
+          "400": {"description": "Rejected password", "schema": {"type": "string"}},
+          "401": {"description": "Not logged in", "schema": {"type": "string"}}
+        }
+      }
+    },
+    "/api/admins": {
+      "get": {
+        "tags": ["admin"],
+        "summary": "List administrators",
+        "description": "Requires an administrator who has already changed the default password. Password hashes are not returned.",
+        "security": [{"Bearer": []}],
+        "responses": {
+          "200": {
+            "description": "Administrators",
+            "schema": {"type": "object", "properties": {"admins": {"type": "array", "items": {"$ref": "#/definitions/Admin"}}}}
+          },
+          "401": {"description": "Not logged in", "schema": {"type": "string"}},
+          "403": {"description": "Password change required", "schema": {"type": "string"}}
+        }
+      },
+      "post": {
+        "tags": ["admin"],
+        "summary": "Create an administrator",
+        "description": "Any administrator who has chosen a password can create another one. The username must be an email address. The account receives the default password from ADMIN_PASSWORD and must change it at first login.",
+        "security": [{"Bearer": []}],
+        "parameters": [{
+          "name": "body",
+          "in": "body",
+          "required": true,
+          "schema": {"type": "object", "properties": {"username": {"type": "string", "format": "email"}}}
+        }],
+        "responses": {
+          "200": {"description": "Created", "schema": {"$ref": "#/definitions/Admin"}},
+          "400": {"description": "Username is not an email, or the default password is missing", "schema": {"type": "string"}},
+          "409": {"description": "Username already exists", "schema": {"type": "string"}}
+        }
+      }
+    },
+    "/api/admins/reset": {
+      "post": {
+        "tags": ["admin"],
+        "summary": "Reset another administrator to the default password",
+        "description": "Sets that account's password to ADMIN_PASSWORD and requires a change at the next login. The caller's own account cannot be reset this way.",
+        "security": [{"Bearer": []}],
+        "parameters": [{
+          "name": "body",
+          "in": "body",
+          "required": true,
+          "schema": {"type": "object", "properties": {"username": {"type": "string", "format": "email"}}}
+        }],
+        "responses": {
+          "200": {"description": "Reset", "schema": {"$ref": "#/definitions/Status"}},
+          "400": {"description": "Rejected reset", "schema": {"type": "string"}},
+          "403": {"description": "Password change required", "schema": {"type": "string"}}
         }
       }
     },
@@ -303,6 +380,21 @@
         "woodTypes": {"type": "array", "items": {"type": "string"}},
         "groups": {"type": "array", "items": {"type": "string"}},
         "sizes": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "Session": {
+      "type": "object",
+      "properties": {
+        "username": {"type": "string"},
+        "token": {"type": "string", "description": "Present after login and after a password change."},
+        "mustChangePassword": {"type": "boolean"}
+      }
+    },
+    "Admin": {
+      "type": "object",
+      "properties": {
+        "username": {"type": "string"},
+        "mustChangePassword": {"type": "boolean"}
       }
     },
     "Status": {

@@ -37,6 +37,7 @@ import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined'
 import SearchIcon from '@mui/icons-material/Search'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import InputAdornment from '@mui/material/InputAdornment'
+import AdminsDialog from './AdminsDialog'
 import ItemDialog, { emptyItem } from './ItemDialog'
 import { navigate } from './route'
 import {
@@ -100,6 +101,7 @@ export default function App({ username, onLogout }) {
   const [confirm, setConfirm] = useState(null)
   const [confirming, setConfirming] = useState(false)
   const [menuAnchor, setMenuAnchor] = useState(null)
+  const [adminsOpen, setAdminsOpen] = useState(false)
   const [snack, setSnack] = useState({ open: false, message: '', severity: 'success' })
   const openSeq = useRef(0)
 
@@ -322,6 +324,7 @@ export default function App({ username, onLogout }) {
             </Tooltip>
           </Stack>
           <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={() => setMenuAnchor(null)}>
+            <MenuItem onClick={() => { setMenuAnchor(null); setAdminsOpen(true) }}>Administradores</MenuItem>
             <MenuItem onClick={runMigrate}>Actualizar base de datos</MenuItem>
             <MenuItem onClick={askImport}>Importar initial_load.json</MenuItem>
           </Menu>
@@ -491,6 +494,13 @@ export default function App({ username, onLogout }) {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <AdminsDialog
+        open={adminsOpen}
+        username={username}
+        onClose={() => setAdminsOpen(false)}
+        onNotify={notify}
+      />
 
       <Snackbar open={snack.open} autoHideDuration={4000} onClose={() => setSnack((prev) => ({ ...prev, open: false }))} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
         <Alert severity={snack.severity} onClose={() => setSnack((prev) => ({ ...prev, open: false }))} variant="filled">{snack.message}</Alert>
