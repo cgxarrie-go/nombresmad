@@ -1,13 +1,22 @@
 package service
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/base64"
+	"errors"
 	"strconv"
 	"strings"
 	"time"
+
+	"google.golang.org/api/idtoken"
+)
+
+const (
+	passwordAuthMethod = "password"
+	googleAuthMethod   = "google"
 )
 
 // Session is an authenticated administrator.
@@ -16,21 +25,64 @@ type Session struct {
 	MustChangePassword bool
 }
 
-// Auth checks administrator passwords and signs session tokens.
+// GoogleIdentity contains the verified identity claims required for sign-in.
+type GoogleIdentity struct {
+	Email         string
+	EmailVerified bool
+}
+
+// GoogleTokenVerifier verifies an ID token for the configured OAuth client.
+type GoogleTokenVerifier interface {
+	Verify(ctx context.Context, credential, audience string) (GoogleIdentity, error)
+}
+
+type googleIDTokenVerifier struct{}
+
+func (googleIDTokenVerifier) Verify(ctx context.Context, credential, audience string) (GoogleIdentity, error) {
+	payload, err := idtoken.Validate(ctx, credential, audience)
+	if err != nil {
+		return GoogleIdentity{}, err
+	}
+	email, _ := payload.Claims["email"].(string)
+	emailVerified, _ := payload.Claims["email_verified"].(bool)
+	return GoogleIdentity{Email: email, EmailVerified: emailVerified}, nil
+}
+
+// Auth checks administrator credentials and signs session tokens.
 type Auth struct {
 	users           AdminStore
 	defaultPassword string
 	secret          []byte
 	dummyHash       string
+	googleClientID  string
+	authorizedEmail map[string]struct{}
+	googleVerifier  GoogleTokenVerifier
 }
 
-// NewAuth uses the account store, the default password from the environment, and a session secret.
-func NewAuth(users AdminStore, defaultPassword string, secret []byte) *Auth {
+// NewAuth uses the account store, fallback credentials, session secret, and Google configuration.
+func NewAuth(users AdminStore, defaultPassword string, secret []byte, googleClientID string, authorizedEmails []string, verifier GoogleTokenVerifier) *Auth {
 	dummy, err := HashPassword(randomToken())
 	if err != nil {
 		dummy = ""
 	}
-	return &Auth{users: users, defaultPassword: defaultPassword, secret: secret, dummyHash: dummy}
+	allowlist := make(map[string]struct{}, len(authorizedEmails))
+	for _, address := range authorizedEmails {
+		if email, ok := NormalizeEmail(address); ok {
+			allowlist[email] = struct{}{}
+		}
+	}
+	if verifier == nil {
+		verifier = googleIDTokenVerifier{}
+	}
+	return &Auth{
+		users:           users,
+		defaultPassword: defaultPassword,
+		secret:          secret,
+		dummyHash:       dummy,
+		googleClientID:  googleClientID,
+		authorizedEmail: allowlist,
+		googleVerifier:  verifier,
+	}
 }
 
 // Check reports whether the supplied credentials match a stored account.
@@ -63,30 +115,64 @@ func (a *Auth) authenticate(username, password string) (storedUsername string, v
 	return storedUsername, version, mustChange, true
 }
 
-// Login checks the credentials and returns a session token.
+// Login checks the fallback password credentials and returns a session token.
 func (a *Auth) Login(username, password string, expires time.Time) (string, Session, bool) {
 	user, version, mustChange, ok := a.authenticate(username, password)
 	if !ok {
 		return "", Session{}, false
 	}
-	return a.Sign(user, version, expires), Session{Username: user, MustChangePassword: mustChange}, true
+	return a.sign(passwordAuthMethod, user, version, expires), Session{Username: user, MustChangePassword: mustChange}, true
 }
 
-// Session validates a bearer token against the current credential version.
+// LoginGoogle verifies a Google ID token, enforces the email allowlist, and returns a session token.
+func (a *Auth) LoginGoogle(credential string, expires time.Time) (string, Session, bool) {
+	if a == nil || a.googleVerifier == nil || a.googleClientID == "" || credential == "" {
+		return "", Session{}, false
+	}
+	identity, err := a.googleVerifier.Verify(context.Background(), credential, a.googleClientID)
+	if err != nil || !identity.EmailVerified {
+		return "", Session{}, false
+	}
+	email, ok := NormalizeEmail(identity.Email)
+	if !ok || !a.isAuthorizedGoogleEmail(email) {
+		return "", Session{}, false
+	}
+	return a.sign(googleAuthMethod, email, 0, expires), Session{Username: email}, true
+}
+
+// Session validates a bearer token against the current account state and allowlist.
 func (a *Auth) Session(token string, now time.Time) (Session, bool) {
-	username, version, ok := a.Read(token, now)
-	if !ok || a == nil || a.users == nil {
+	principal, version, method, ok := a.read(token, now)
+	if !ok || a == nil {
 		return Session{}, false
 	}
-	email, emailOK := NormalizeEmail(username)
-	if !emailOK {
+	switch method {
+	case googleAuthMethod:
+		if !a.isAuthorizedGoogleEmail(principal) {
+			return Session{}, false
+		}
+		return Session{Username: principal}, true
+	case passwordAuthMethod:
+		if a.users == nil {
+			return Session{}, false
+		}
+		email, emailOK := NormalizeEmail(principal)
+		if !emailOK {
+			return Session{}, false
+		}
+		rec, err := a.users.ByUsername(email)
+		if err != nil || rec.CredentialVersion != version || rec.Username != email {
+			return Session{}, false
+		}
+		return Session{Username: rec.Username, MustChangePassword: rec.MustChangePassword}, true
+	default:
 		return Session{}, false
 	}
-	rec, err := a.users.ByUsername(email)
-	if err != nil || rec.CredentialVersion != version || rec.Username != email {
-		return Session{}, false
-	}
-	return Session{Username: rec.Username, MustChangePassword: rec.MustChangePassword}, true
+}
+
+func (a *Auth) isAuthorizedGoogleEmail(email string) bool {
+	_, ok := a.authorizedEmail[email]
+	return ok
 }
 
 func hashEqual(a, b string) bool {
@@ -95,45 +181,89 @@ func hashEqual(a, b string) bool {
 	return subtle.ConstantTimeCompare(left[:], right[:]) == 1
 }
 
-// Sign builds a session token that expires at the given time.
+// Sign builds a password-fallback session token that expires at the given time.
 // version must match the account's credential version or Session rejects the token.
 func (a *Auth) Sign(username string, version int, expires time.Time) string {
-	payload := username + "|" + strconv.FormatInt(expires.Unix(), 10) + "|" + strconv.Itoa(version)
+	return a.sign(passwordAuthMethod, username, version, expires)
+}
+
+func (a *Auth) sign(method, principal string, version int, expires time.Time) string {
+	payload := strings.Join([]string{"v1", method, principal, strconv.FormatInt(expires.Unix(), 10), strconv.Itoa(version)}, "|")
 	mac := hmac.New(sha256.New, a.secret)
 	mac.Write([]byte(payload))
 	return base64.RawURLEncoding.EncodeToString([]byte(payload)) + "." + base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
 }
 
-// Read validates a session token at the given time.
+// Read validates a signed session token and returns its principal and credential version.
 func (a *Auth) Read(token string, now time.Time) (string, int, bool) {
+	principal, version, _, ok := a.read(token, now)
+	return principal, version, ok
+}
+
+func (a *Auth) read(token string, now time.Time) (string, int, string, bool) {
+	if a == nil || len(token) > 4096 {
+		return "", 0, "", false
+	}
 	payload, sig, ok := strings.Cut(token, ".")
 	if !ok {
-		return "", 0, false
+		return "", 0, "", false
 	}
 	raw, err := base64.RawURLEncoding.DecodeString(payload)
 	if err != nil {
-		return "", 0, false
+		return "", 0, "", false
 	}
 	got, err := base64.RawURLEncoding.DecodeString(sig)
 	if err != nil {
-		return "", 0, false
+		return "", 0, "", false
 	}
 	mac := hmac.New(sha256.New, a.secret)
 	mac.Write(raw)
 	if !hmac.Equal(got, mac.Sum(nil)) {
-		return "", 0, false
+		return "", 0, "", false
 	}
 	parts := strings.Split(string(raw), "|")
-	if len(parts) != 3 || parts[0] == "" {
-		return "", 0, false
+	if len(parts) != 5 || parts[0] != "v1" || parts[2] == "" {
+		return "", 0, "", false
 	}
-	exp, err := strconv.ParseInt(parts[1], 10, 64)
+	exp, err := strconv.ParseInt(parts[3], 10, 64)
 	if err != nil || !now.Before(time.Unix(exp, 0)) {
-		return "", 0, false
+		return "", 0, "", false
 	}
-	version, err := strconv.Atoi(parts[2])
-	if err != nil || version < 1 {
-		return "", 0, false
+	version, err := strconv.Atoi(parts[4])
+	if err != nil || version < 0 {
+		return "", 0, "", false
 	}
-	return parts[0], version, true
+	switch parts[1] {
+	case googleAuthMethod:
+		if version != 0 {
+			return "", 0, "", false
+		}
+	case passwordAuthMethod:
+		if version < 1 {
+			return "", 0, "", false
+		}
+	default:
+		return "", 0, "", false
+	}
+	return parts[2], version, parts[1], true
+}
+
+// NormalizeAuthorizedEmails validates and normalizes a comma-separated allowlist.
+func NormalizeAuthorizedEmails(value string) ([]string, error) {
+	emails := make([]string, 0)
+	seen := make(map[string]struct{})
+	for _, entry := range strings.Split(value, ",") {
+		email, ok := NormalizeEmail(entry)
+		if !ok {
+			return nil, errors.New("AUTHORIZED_EMAILS must contain only valid email addresses")
+		}
+		if _, exists := seen[email]; !exists {
+			emails = append(emails, email)
+			seen[email] = struct{}{}
+		}
+	}
+	if len(emails) == 0 {
+		return nil, errors.New("AUTHORIZED_EMAILS must contain at least one email address")
+	}
+	return emails, nil
 }

@@ -26,9 +26,11 @@ services:
       PGUSER: postgres
       PGPASSWORD: postgres
       PGDATABASE: nombresmad
-      ADMIN_USER: admin@example.com
-      # Shared default password. First login and every reset must change it.
-      ADMIN_PASSWORD: admin
+      ADMIN_USER: ${ADMIN_USER:-admin@example.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD?Set_ADMIN_PASSWORD_in_.env_or_empty_to_disable}
+      ADMIN_SECRET: ${ADMIN_SECRET?Set_ADMIN_SECRET_in_.env}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID?Set_GOOGLE_CLIENT_ID_in_.env}
+      AUTHORIZED_EMAILS: ${AUTHORIZED_EMAILS?Set_AUTHORIZED_EMAILS_in_.env}
       NOMAD_JSON: /app/seed_data/initial_load.json
     ports:
       - 8080:8080
@@ -40,9 +42,12 @@ services:
     build:
       context: ./frontend
       target: deps
+      args:
+        REACT_APP_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID?Set_GOOGLE_CLIENT_ID_in_.env}
     environment:
       API_PROXY_TARGET: http://backend:8080
       WATCHPACK_POLLING: "true"
+      REACT_APP_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID?Set_GOOGLE_CLIENT_ID_in_.env}
     volumes:
       - ./frontend:/app
       - /app/node_modules

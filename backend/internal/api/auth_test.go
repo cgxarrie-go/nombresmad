@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -87,7 +88,7 @@ func TestLoginReturnsBearerToken(t *testing.T) {
 
 	notEmail := httptest.NewRecorder()
 	srv.login(notEmail, httptest.NewRequest(http.MethodPost, "/api/login", strings.NewReader(`{"username":"admin","password":"secret"}`)))
-	if notEmail.Code != http.StatusBadRequest {
+	if notEmail.Code != http.StatusUnauthorized {
 		t.Fatalf("status=%d body=%s", notEmail.Code, notEmail.Body.String())
 	}
 }
@@ -151,9 +152,82 @@ func TestAdminResetForcesPasswordChange(t *testing.T) {
 	}
 }
 
+type apiGoogleVerifier struct{}
+
+func (apiGoogleVerifier) Verify(_ context.Context, credential, audience string) (service.GoogleIdentity, error) {
+	if credential != "valid-credential" || audience != "web-client-id" {
+		return service.GoogleIdentity{}, os.ErrInvalid
+	}
+	return service.GoogleIdentity{Email: "admin@example.com", EmailVerified: true}, nil
+}
+
+func TestGoogleLoginAndRequestValidation(t *testing.T) {
+	auth := service.NewAuth(nil, "", []byte("test-secret"), "web-client-id", []string{"admin@example.com"}, apiGoogleVerifier{})
+	srv := &Server{auth: auth}
+	google := postJSON(t, srv.loginGoogle, "/api/login/google", `{"credential":"valid-credential"}`, "")
+	if google.Username != "admin@example.com" || google.Token == "" || google.MustChangePassword {
+		t.Fatalf("body=%+v", google)
+	}
+
+	sessionReq := requestWithToken(http.MethodGet, "/api/session", google.Token)
+	sessionRec := httptest.NewRecorder()
+	srv.session(sessionRec, sessionReq)
+	if sessionRec.Code != http.StatusOK {
+		t.Fatalf("session status=%d body=%s", sessionRec.Code, sessionRec.Body.String())
+	}
+
+	badPassword := httptest.NewRecorder()
+	srv.login(badPassword, httptest.NewRequest(http.MethodPost, "/api/login", strings.NewReader(`{"username":"admin@example.com","password":"wrong"}`)))
+	notAllowedGoogle := httptest.NewRecorder()
+	srv.loginGoogle(notAllowedGoogle, httptest.NewRequest(http.MethodPost, "/api/login/google", strings.NewReader(`{"credential":"not-allowed"}`)))
+	if badPassword.Code != http.StatusUnauthorized || notAllowedGoogle.Code != http.StatusUnauthorized {
+		t.Fatalf("password status=%d Google status=%d", badPassword.Code, notAllowedGoogle.Code)
+	}
+	if strings.TrimSpace(badPassword.Body.String()) != strings.TrimSpace(notAllowedGoogle.Body.String()) {
+		t.Fatalf("unauthorized errors disclose different details: password=%q Google=%q", badPassword.Body.String(), notAllowedGoogle.Body.String())
+	}
+
+	for _, handler := range []http.HandlerFunc{srv.login, srv.loginGoogle} {
+		malformed := httptest.NewRecorder()
+		handler(malformed, httptest.NewRequest(http.MethodPost, "/api/login", strings.NewReader(`{`)))
+		if malformed.Code != http.StatusBadRequest {
+			t.Fatalf("malformed status=%d body=%s", malformed.Code, malformed.Body.String())
+		}
+		oversized := httptest.NewRecorder()
+		handler(oversized, httptest.NewRequest(http.MethodPost, "/api/login", strings.NewReader(`{"credential":"`+strings.Repeat("x", maxLoginBodyBytes)+`"}`)))
+		if oversized.Code != http.StatusRequestEntityTooLarge {
+			t.Fatalf("oversized status=%d body=%s", oversized.Code, oversized.Body.String())
+		}
+	}
+}
+
+func TestExpiredSessionAndLogout(t *testing.T) {
+	auth := newTestAuth(t, "secret")
+	if err := auth.EnsureDefaultAdmin("admin@example.com"); err != nil {
+		t.Fatal(err)
+	}
+	srv := &Server{auth: auth}
+	expired := auth.Sign("admin@example.com", 1, time.Now().Add(-time.Minute))
+	rec := httptest.NewRecorder()
+	srv.session(rec, requestWithToken(http.MethodGet, "/api/session", expired))
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("expired session status=%d body=%s", rec.Code, rec.Body.String())
+	}
+
+	logout := httptest.NewRecorder()
+	srv.logout(logout, httptest.NewRequest(http.MethodPost, "/api/logout", nil))
+	if logout.Code != http.StatusOK {
+		t.Fatalf("logout status=%d body=%s", logout.Code, logout.Body.String())
+	}
+	cookies := logout.Result().Cookies()
+	if len(cookies) != 1 || cookies[0].Name != legacySessionCookie || cookies[0].MaxAge >= 0 {
+		t.Fatalf("legacy cookie was not cleared: %+v", cookies)
+	}
+}
+
 func newTestAuth(t *testing.T, defaultPassword string) *service.Auth {
 	t.Helper()
-	return service.NewAuth(service.NewMemoryAdminStore(), defaultPassword, []byte("test-secret"))
+	return service.NewAuth(service.NewMemoryAdminStore(), defaultPassword, []byte("test-secret"), "", nil, nil)
 }
 
 func requestWithToken(method, path, token string) *http.Request {

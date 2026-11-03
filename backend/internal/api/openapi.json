@@ -11,7 +11,7 @@
       "type": "apiKey",
       "name": "Authorization",
       "in": "header",
-      "description": "Bearer session token returned by POST /api/login"
+      "description": "App bearer token returned by POST /api/login or /api/login/google"
     }
   },
   "consumes": ["application/json"],
@@ -24,8 +24,8 @@
     "/api/login": {
       "post": {
         "tags": ["admin"],
-        "summary": "Log in",
-        "description": "Checks an email address and password against the admins table and returns a bearer token valid for 12 hours. Send it as Authorization: Bearer <token> on later requests. Usernames that are not email addresses are rejected. mustChangePassword is true when the account still has the default password.",
+        "summary": "Emergency password login",
+        "description": "Emergency password fallback: checks the configured email and password, returning an app token valid for 12 hours.",
         "consumes": ["application/json"],
         "produces": ["application/json"],
         "parameters": [{
@@ -42,7 +42,36 @@
         }],
         "responses": {
           "200": {"description": "Logged in", "schema": {"$ref": "#/definitions/Session"}},
-          "401": {"description": "Wrong username or password", "schema": {"type": "string"}}
+          "400": {"description": "Malformed request body", "schema": {"type": "string"}},
+          "401": {"description": "Unauthorized", "schema": {"type": "string"}},
+          "413": {"description": "Request body is too large", "schema": {"type": "string"}}
+        }
+      }
+    },
+    "/api/login/google": {
+      "post": {
+        "tags": ["admin"],
+        "summary": "Log in with Google",
+        "description": "Verifies a Google Identity Services ID token for the configured OAuth client, requires a verified email on the server-side allowlist, and returns an app token valid for 12 hours.",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [{
+          "name": "body",
+          "in": "body",
+          "required": true,
+          "schema": {
+            "type": "object",
+            "required": ["credential"],
+            "properties": {
+              "credential": {"type": "string", "description": "Google ID token credential"}
+            }
+          }
+        }],
+        "responses": {
+          "200": {"description": "Logged in", "schema": {"$ref": "#/definitions/Session"}},
+          "400": {"description": "Malformed request body", "schema": {"type": "string"}},
+          "401": {"description": "Unauthorized, invalid credential, or email is not allowlisted", "schema": {"type": "string"}},
+          "413": {"description": "Request body is too large", "schema": {"type": "string"}}
         }
       }
     },
@@ -176,6 +205,7 @@
       "post": {
         "tags": ["items"],
         "summary": "Create an item",
+        "security": [{"Bearer": []}],
         "description": "Inserts an item. The server assigns id.",
         "consumes": ["application/json"],
         "produces": ["application/json"],
@@ -189,6 +219,8 @@
         ],
         "responses": {
           "200": {"description": "Created item", "schema": {"$ref": "#/definitions/Item"}},
+          "401": {"description": "Not logged in", "schema": {"type": "string"}},
+          "403": {"description": "Password change required", "schema": {"type": "string"}},
           "400": {"description": "Invalid JSON", "schema": {"type": "string"}},
           "500": {"description": "Database error", "schema": {"type": "string"}}
         }
@@ -210,6 +242,7 @@
       "put": {
         "tags": ["items"],
         "summary": "Update an item",
+        "security": [{"Bearer": []}],
         "description": "Replaces the fields of the item identified by the path id.",
         "consumes": ["application/json"],
         "produces": ["application/json"],
@@ -224,6 +257,8 @@
         ],
         "responses": {
           "200": {"description": "Updated item", "schema": {"$ref": "#/definitions/Item"}},
+          "401": {"description": "Not logged in", "schema": {"type": "string"}},
+          "403": {"description": "Password change required", "schema": {"type": "string"}},
           "404": {"description": "Not found", "schema": {"type": "string"}},
           "400": {"description": "Missing, invalid id, or invalid JSON", "schema": {"type": "string"}},
           "500": {"description": "Database error", "schema": {"type": "string"}}
@@ -232,10 +267,13 @@
       "delete": {
         "tags": ["items"],
         "summary": "Delete an item",
+        "security": [{"Bearer": []}],
         "produces": ["application/json"],
         "parameters": [{"$ref": "#/parameters/itemId"}],
         "responses": {
           "200": {"description": "Deleted", "schema": {"$ref": "#/definitions/Status"}},
+          "401": {"description": "Not logged in", "schema": {"type": "string"}},
+          "403": {"description": "Password change required", "schema": {"type": "string"}},
           "404": {"description": "Not found", "schema": {"type": "string"}},
           "400": {"description": "Missing or invalid id", "schema": {"type": "string"}},
           "500": {"description": "Database error", "schema": {"type": "string"}}
@@ -257,6 +295,7 @@
       "post": {
         "tags": ["items"],
         "summary": "Upload or replace an item picture",
+        "security": [{"Bearer": []}],
         "description": "Accepts one image file (JPEG, PNG, GIF, or WebP) up to 8 MB in the form field file. Replaces any picture already stored for the item.",
         "consumes": ["multipart/form-data"],
         "produces": ["application/json"],
@@ -266,6 +305,8 @@
         ],
         "responses": {
           "200": {"description": "Item with the stored picture name", "schema": {"$ref": "#/definitions/Item"}},
+          "401": {"description": "Not logged in", "schema": {"type": "string"}},
+          "403": {"description": "Password change required", "schema": {"type": "string"}},
           "400": {"description": "Missing, too large, or unsupported image", "schema": {"type": "string"}},
           "404": {"description": "Item not found", "schema": {"type": "string"}},
           "500": {"description": "Database or disk error", "schema": {"type": "string"}}
@@ -274,10 +315,13 @@
       "delete": {
         "tags": ["items"],
         "summary": "Remove an item picture",
+        "security": [{"Bearer": []}],
         "produces": ["application/json"],
         "parameters": [{"$ref": "#/parameters/itemId"}],
         "responses": {
           "200": {"description": "Item without a picture", "schema": {"$ref": "#/definitions/Item"}},
+          "401": {"description": "Not logged in", "schema": {"type": "string"}},
+          "403": {"description": "Password change required", "schema": {"type": "string"}},
           "404": {"description": "Item not found", "schema": {"type": "string"}},
           "500": {"description": "Database error", "schema": {"type": "string"}}
         }
@@ -299,10 +343,13 @@
       "post": {
         "tags": ["admin"],
         "summary": "Reload items from initial_load.json",
+        "security": [{"Bearer": []}],
         "description": "Replaces every row in items with the contents of initial_load.json and deletes stored pictures. Startup already loads that file when the table is empty.",
         "produces": ["application/json"],
         "responses": {
           "200": {"description": "Imported", "schema": {"$ref": "#/definitions/Status"}},
+          "401": {"description": "Not logged in", "schema": {"type": "string"}},
+          "403": {"description": "Password change required", "schema": {"type": "string"}},
           "405": {"description": "Method not allowed", "schema": {"type": "string"}},
           "500": {"description": "Read or database error", "schema": {"type": "string"}}
         }
@@ -312,10 +359,13 @@
       "post": {
         "tags": ["admin"],
         "summary": "Apply migrations.sql",
+        "security": [{"Bearer": []}],
         "description": "Runs migrations.sql. Startup already applies it.",
         "produces": ["application/json"],
         "responses": {
           "200": {"description": "Migrated", "schema": {"$ref": "#/definitions/Status"}},
+          "401": {"description": "Not logged in", "schema": {"type": "string"}},
+          "403": {"description": "Password change required", "schema": {"type": "string"}},
           "405": {"description": "Method not allowed", "schema": {"type": "string"}},
           "500": {"description": "Migration error", "schema": {"type": "string"}}
         }
