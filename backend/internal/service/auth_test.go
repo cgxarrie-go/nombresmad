@@ -20,7 +20,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestSessionRoundTrip(t *testing.T) {
-	auth := NewAuth(nil, "", []byte("test-secret"), "", nil, nil)
+	auth := NewAuth(nil, "", []byte("test-secret"), "", nil)
 	token := auth.Sign("admin@example.com", 1, time.Now().Add(time.Hour))
 	user, version, ok := auth.Read(token, time.Now())
 	if !ok || user != "admin@example.com" || version != 1 {
@@ -49,7 +49,7 @@ func TestCredentials(t *testing.T) {
 	if auth.Check("admin@example.com", "wrong") || auth.Check("other", "secret") || auth.Check("admin@example.com", "") {
 		t.Fatal("expected mismatch")
 	}
-	disabled := NewAuth(NewMemoryAdminStore(), "", []byte("test-secret"), "", nil, nil)
+	disabled := NewAuth(NewMemoryAdminStore(), "", []byte("test-secret"), "", nil)
 	if err := disabled.EnsureDefaultAdmin("admin@example.com"); err != nil {
 		t.Fatal(err)
 	}
@@ -60,7 +60,7 @@ func TestCredentials(t *testing.T) {
 
 func TestPasswordIsStoredHashedAndFirstLoginMustChange(t *testing.T) {
 	store := NewMemoryAdminStore()
-	auth := NewAuth(store, "secret", []byte("test-secret"), "", nil, nil)
+	auth := NewAuth(store, "secret", []byte("test-secret"), "", nil)
 	if err := auth.EnsureDefaultAdmin("admin@example.com"); err != nil {
 		t.Fatal(err)
 	}
@@ -180,7 +180,7 @@ func TestAdminCanResetAnotherAdminToDefault(t *testing.T) {
 
 func TestNonEmailAdminIsRejected(t *testing.T) {
 	store := NewMemoryAdminStore()
-	auth := NewAuth(store, "secret", []byte("test-secret"), "", nil, nil)
+	auth := NewAuth(store, "secret", []byte("test-secret"), "", nil)
 	if err := store.Insert("admin", "not-a-hash", false); err != nil {
 		t.Fatal(err)
 	}
@@ -218,7 +218,7 @@ func TestNonEmailAdminIsRejected(t *testing.T) {
 
 func testAuth(t *testing.T, defaultPassword string) *Auth {
 	t.Helper()
-	return NewAuth(NewMemoryAdminStore(), defaultPassword, []byte("test-secret"), "", nil, nil)
+	return NewAuth(NewMemoryAdminStore(), defaultPassword, []byte("test-secret"), "", nil)
 }
 
 type fakeGoogleVerifier struct {
@@ -234,12 +234,12 @@ func (v fakeGoogleVerifier) Verify(_ context.Context, credential, audience strin
 	return v.identity, v.err
 }
 
-func TestGoogleLoginAndAllowlistSessionValidation(t *testing.T) {
+func TestGoogleLoginAndSessionValidation(t *testing.T) {
 	verifier := fakeGoogleVerifier{
 		identity: GoogleIdentity{Email: " ADMIN@example.com ", EmailVerified: true},
 		audience: "web-client-id",
 	}
-	auth := NewAuth(nil, "", []byte("test-secret"), "web-client-id", []string{" Admin@Example.com "}, verifier)
+	auth := NewAuth(nil, "", []byte("test-secret"), "web-client-id", verifier)
 	token, session, ok := auth.LoginGoogle("valid-credential", time.Now().Add(time.Hour))
 	if !ok || session.Username != "admin@example.com" || session.MustChangePassword {
 		t.Fatalf("session=%+v ok=%v", session, ok)
@@ -247,30 +247,32 @@ func TestGoogleLoginAndAllowlistSessionValidation(t *testing.T) {
 	if got, ok := auth.Session(token, time.Now()); !ok || got.Username != "admin@example.com" {
 		t.Fatalf("session=%+v ok=%v", got, ok)
 	}
-	delete(auth.authorizedEmail, "admin@example.com")
-	if _, ok := auth.Session(token, time.Now()); ok {
-		t.Fatal("session survived allowlist removal")
+	otherVerifier := fakeGoogleVerifier{
+		identity: GoogleIdentity{Email: "other@example.com", EmailVerified: true},
+		audience: "web-client-id",
+	}
+	otherAuth := NewAuth(nil, "", []byte("test-secret"), "web-client-id", otherVerifier)
+	if _, otherSession, ok := otherAuth.LoginGoogle("valid-credential", time.Now().Add(time.Hour)); !ok || otherSession.Username != "other@example.com" {
+		t.Fatalf("verified Google account was rejected: session=%+v ok=%v", otherSession, ok)
 	}
 }
 
 func TestGoogleLoginRejectsInvalidClaimsAndCredentials(t *testing.T) {
 	tests := []struct {
-		name        string
-		clientID    string
-		identity    GoogleIdentity
-		err         error
-		allowlisted string
+		name     string
+		clientID string
+		identity GoogleIdentity
+		err      error
 	}{
-		{name: "unauthorized email", clientID: "web-client-id", identity: GoogleIdentity{Email: "other@example.com", EmailVerified: true}, allowlisted: "admin@example.com"},
-		{name: "wrong audience", clientID: "wrong-client-id", identity: GoogleIdentity{Email: "admin@example.com", EmailVerified: true}, allowlisted: "admin@example.com"},
-		{name: "unverified email", clientID: "web-client-id", identity: GoogleIdentity{Email: "admin@example.com"}, allowlisted: "admin@example.com"},
-		{name: "invalid or expired credential", clientID: "web-client-id", err: errors.New("invalid token"), allowlisted: "admin@example.com"},
-		{name: "empty email", clientID: "web-client-id", identity: GoogleIdentity{EmailVerified: true}, allowlisted: "admin@example.com"},
+		{name: "wrong audience", clientID: "wrong-client-id", identity: GoogleIdentity{Email: "admin@example.com", EmailVerified: true}},
+		{name: "unverified email", clientID: "web-client-id", identity: GoogleIdentity{Email: "admin@example.com"}},
+		{name: "invalid or expired credential", clientID: "web-client-id", err: errors.New("invalid token")},
+		{name: "empty email", clientID: "web-client-id", identity: GoogleIdentity{EmailVerified: true}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			verifier := fakeGoogleVerifier{identity: tt.identity, err: tt.err, audience: "web-client-id"}
-			auth := NewAuth(nil, "", []byte("test-secret"), tt.clientID, []string{tt.allowlisted}, verifier)
+			auth := NewAuth(nil, "", []byte("test-secret"), tt.clientID, verifier)
 			if _, _, ok := auth.LoginGoogle("credential", time.Now().Add(time.Hour)); ok {
 				t.Fatal("invalid Google credentials were accepted")
 			}
@@ -279,7 +281,7 @@ func TestGoogleLoginRejectsInvalidClaimsAndCredentials(t *testing.T) {
 }
 
 func TestLegacyMalformedAndExpiredTokensAreRejected(t *testing.T) {
-	auth := NewAuth(nil, "", []byte("test-secret"), "web-client-id", []string{"admin@example.com"}, nil)
+	auth := NewAuth(nil, "", []byte("test-secret"), "web-client-id", nil)
 	legacyPayload := []byte("admin@example.com|1|1")
 	mac := hmac.New(sha256.New, auth.secret)
 	_, _ = mac.Write(legacyPayload)
@@ -307,21 +309,5 @@ func TestPasswordLoginCreatesSession(t *testing.T) {
 	}
 	if _, ok := auth.Session(token, time.Now()); !ok {
 		t.Fatal("fallback token was rejected")
-	}
-}
-
-func TestNormalizeAuthorizedEmails(t *testing.T) {
-	emails, err := NormalizeAuthorizedEmails(" Admin@Example.com,other@example.org, admin@example.com ")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(emails) != 2 || emails[0] != "admin@example.com" || emails[1] != "other@example.org" {
-		t.Fatalf("emails=%v", emails)
-	}
-	if _, err := NormalizeAuthorizedEmails(" , "); err == nil {
-		t.Fatal("empty allowlist was accepted")
-	}
-	if _, err := NormalizeAuthorizedEmails("admin@example.com,invalid"); err == nil {
-		t.Fatal("invalid allowlist entry was accepted")
 	}
 }

@@ -181,11 +181,14 @@ export default function Gallery() {
         </Container>
         {session !== undefined && (
           <Box sx={{ position: 'absolute', top: 16, right: 16, zIndex: 2, display: 'flex', gap: 1 }}>
-            <Tooltip title="Administración">
-              <IconButton aria-label="Administración" onClick={() => navigate('/lista')} sx={cornerIconSx}>
-                <AdminPanelSettingsOutlinedIcon />
-              </IconButton>
-            </Tooltip>
+            <Button
+              aria-label="Acceso a administración"
+              onClick={() => navigate('/lista')}
+              startIcon={<AdminPanelSettingsOutlinedIcon />}
+              sx={{ ...cornerIconSx, px: 1.5 }}
+            >
+              Administración
+            </Button>
             {session && (
               <Tooltip title={session.username ? `Salir (${session.username})` : 'Salir'}>
                 <IconButton

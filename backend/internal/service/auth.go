@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/base64"
-	"errors"
 	"strconv"
 	"strings"
 	"time"
@@ -55,21 +54,14 @@ type Auth struct {
 	secret          []byte
 	dummyHash       string
 	googleClientID  string
-	authorizedEmail map[string]struct{}
 	googleVerifier  GoogleTokenVerifier
 }
 
 // NewAuth uses the account store, fallback credentials, session secret, and Google configuration.
-func NewAuth(users AdminStore, defaultPassword string, secret []byte, googleClientID string, authorizedEmails []string, verifier GoogleTokenVerifier) *Auth {
+func NewAuth(users AdminStore, defaultPassword string, secret []byte, googleClientID string, verifier GoogleTokenVerifier) *Auth {
 	dummy, err := HashPassword(randomToken())
 	if err != nil {
 		dummy = ""
-	}
-	allowlist := make(map[string]struct{}, len(authorizedEmails))
-	for _, address := range authorizedEmails {
-		if email, ok := NormalizeEmail(address); ok {
-			allowlist[email] = struct{}{}
-		}
 	}
 	if verifier == nil {
 		verifier = googleIDTokenVerifier{}
@@ -80,7 +72,6 @@ func NewAuth(users AdminStore, defaultPassword string, secret []byte, googleClie
 		secret:          secret,
 		dummyHash:       dummy,
 		googleClientID:  googleClientID,
-		authorizedEmail: allowlist,
 		googleVerifier:  verifier,
 	}
 }
@@ -124,7 +115,7 @@ func (a *Auth) Login(username, password string, expires time.Time) (string, Sess
 	return a.sign(passwordAuthMethod, user, version, expires), Session{Username: user, MustChangePassword: mustChange}, true
 }
 
-// LoginGoogle verifies a Google ID token, enforces the email allowlist, and returns a session token.
+// LoginGoogle verifies a Google ID token and returns a session token for its verified email.
 func (a *Auth) LoginGoogle(credential string, expires time.Time) (string, Session, bool) {
 	if a == nil || a.googleVerifier == nil || a.googleClientID == "" || credential == "" {
 		return "", Session{}, false
@@ -134,13 +125,13 @@ func (a *Auth) LoginGoogle(credential string, expires time.Time) (string, Sessio
 		return "", Session{}, false
 	}
 	email, ok := NormalizeEmail(identity.Email)
-	if !ok || !a.isAuthorizedGoogleEmail(email) {
+	if !ok {
 		return "", Session{}, false
 	}
 	return a.sign(googleAuthMethod, email, 0, expires), Session{Username: email}, true
 }
 
-// Session validates a bearer token against the current account state and allowlist.
+// Session validates a bearer token against the current account state.
 func (a *Auth) Session(token string, now time.Time) (Session, bool) {
 	principal, version, method, ok := a.read(token, now)
 	if !ok || a == nil {
@@ -148,7 +139,8 @@ func (a *Auth) Session(token string, now time.Time) (Session, bool) {
 	}
 	switch method {
 	case googleAuthMethod:
-		if !a.isAuthorizedGoogleEmail(principal) {
+		email, emailOK := NormalizeEmail(principal)
+		if !emailOK || email != principal {
 			return Session{}, false
 		}
 		return Session{Username: principal}, true
@@ -168,11 +160,6 @@ func (a *Auth) Session(token string, now time.Time) (Session, bool) {
 	default:
 		return Session{}, false
 	}
-}
-
-func (a *Auth) isAuthorizedGoogleEmail(email string) bool {
-	_, ok := a.authorizedEmail[email]
-	return ok
 }
 
 func hashEqual(a, b string) bool {
@@ -246,24 +233,4 @@ func (a *Auth) read(token string, now time.Time) (string, int, string, bool) {
 		return "", 0, "", false
 	}
 	return parts[2], version, parts[1], true
-}
-
-// NormalizeAuthorizedEmails validates and normalizes a comma-separated allowlist.
-func NormalizeAuthorizedEmails(value string) ([]string, error) {
-	emails := make([]string, 0)
-	seen := make(map[string]struct{})
-	for _, entry := range strings.Split(value, ",") {
-		email, ok := NormalizeEmail(entry)
-		if !ok {
-			return nil, errors.New("AUTHORIZED_EMAILS must contain only valid email addresses")
-		}
-		if _, exists := seen[email]; !exists {
-			emails = append(emails, email)
-			seen[email] = struct{}{}
-		}
-	}
-	if len(emails) == 0 {
-		return nil, errors.New("AUTHORIZED_EMAILS must contain at least one email address")
-	}
-	return emails, nil
 }

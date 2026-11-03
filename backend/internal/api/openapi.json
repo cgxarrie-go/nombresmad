@@ -52,7 +52,7 @@
       "post": {
         "tags": ["admin"],
         "summary": "Log in with Google",
-        "description": "Verifies a Google Identity Services ID token for the configured OAuth client, requires a verified email on the server-side allowlist, and returns an app token valid for 12 hours.",
+        "description": "Verifies a Google Identity Services ID token for the configured OAuth client and requires a verified email. Any verified Google account may sign in. Returns an app token valid for 12 hours.",
         "consumes": ["application/json"],
         "produces": ["application/json"],
         "parameters": [{
@@ -70,7 +70,7 @@
         "responses": {
           "200": {"description": "Logged in", "schema": {"$ref": "#/definitions/Session"}},
           "400": {"description": "Malformed request body", "schema": {"type": "string"}},
-          "401": {"description": "Unauthorized, invalid credential, or email is not allowlisted", "schema": {"type": "string"}},
+          "401": {"description": "Unauthorized or invalid credential", "schema": {"type": "string"}},
           "413": {"description": "Request body is too large", "schema": {"type": "string"}}
         }
       }

@@ -162,7 +162,7 @@ func (apiGoogleVerifier) Verify(_ context.Context, credential, audience string) 
 }
 
 func TestGoogleLoginAndRequestValidation(t *testing.T) {
-	auth := service.NewAuth(nil, "", []byte("test-secret"), "web-client-id", []string{"admin@example.com"}, apiGoogleVerifier{})
+	auth := service.NewAuth(nil, "", []byte("test-secret"), "web-client-id", apiGoogleVerifier{})
 	srv := &Server{auth: auth}
 	google := postJSON(t, srv.loginGoogle, "/api/login/google", `{"credential":"valid-credential"}`, "")
 	if google.Username != "admin@example.com" || google.Token == "" || google.MustChangePassword {
@@ -227,7 +227,7 @@ func TestExpiredSessionAndLogout(t *testing.T) {
 
 func newTestAuth(t *testing.T, defaultPassword string) *service.Auth {
 	t.Helper()
-	return service.NewAuth(service.NewMemoryAdminStore(), defaultPassword, []byte("test-secret"), "", nil, nil)
+	return service.NewAuth(service.NewMemoryAdminStore(), defaultPassword, []byte("test-secret"), "", nil)
 }
 
 func requestWithToken(method, path, token string) *http.Request {

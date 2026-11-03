@@ -39,7 +39,7 @@ func main() {
 	if err = pictures.EnsureDir(); err != nil {
 		log.Fatal(err)
 	}
-	auth := service.NewAuth(repo.NewAdminRepo(db), config.password, config.secret, config.googleClientID, config.authorizedEmails, nil)
+	auth := service.NewAuth(repo.NewAdminRepo(db), config.password, config.secret, config.googleClientID, nil)
 	if err = auth.EnsureDefaultAdmin(os.Getenv("ADMIN_USER")); err != nil {
 		log.Fatal(err)
 	}
@@ -75,20 +75,15 @@ func getenv(key, fallback string) string {
 }
 
 type authConfig struct {
-	googleClientID   string
-	authorizedEmails []string
-	password         string
-	secret           []byte
+	googleClientID string
+	password       string
+	secret         []byte
 }
 
 func readAuthConfig() (authConfig, error) {
 	clientID := strings.TrimSpace(os.Getenv("GOOGLE_CLIENT_ID"))
 	if clientID == "" {
 		return authConfig{}, fmt.Errorf("GOOGLE_CLIENT_ID is required")
-	}
-	emails, err := service.NormalizeAuthorizedEmails(os.Getenv("AUTHORIZED_EMAILS"))
-	if err != nil {
-		return authConfig{}, err
 	}
 	secret := strings.TrimSpace(os.Getenv("ADMIN_SECRET"))
 	if secret == "" {
@@ -99,9 +94,8 @@ func readAuthConfig() (authConfig, error) {
 		log.Println("ADMIN_PASSWORD is empty; default admin password and resets are disabled")
 	}
 	return authConfig{
-		googleClientID:   clientID,
-		authorizedEmails: emails,
-		password:         password,
-		secret:           []byte(secret),
+		googleClientID: clientID,
+		password:       password,
+		secret:         []byte(secret),
 	}, nil
 }

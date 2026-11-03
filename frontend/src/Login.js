@@ -39,7 +39,7 @@ export default function Login({ onSuccess }) {
       onSuccess(session)
     } catch (err) {
       if (err?.response?.status === 401) {
-        setError('Esta cuenta de Google no tiene permiso para administrar la aplicación.')
+        setError('No se pudo verificar esta cuenta de Google. Vuelve a intentarlo.')
       } else if (err?.response) {
         setError('No se pudo completar el inicio de sesión con Google. Inténtalo de nuevo más tarde.')
       } else {
@@ -85,7 +85,7 @@ export default function Login({ onSuccess }) {
               }}
               text="signin_with"
               size="large"
-              locale="en"
+              locale="es"
             />
             {submitting ? <Typography variant="body2" color="text.secondary">Iniciando sesión…</Typography> : null}
             {error ? <Alert severity="error" sx={{ width: '100%' }}>{error}</Alert> : null}
