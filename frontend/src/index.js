@@ -6,6 +6,7 @@ import App from './App'
 import ChangePassword from './ChangePassword'
 import Gallery from './Gallery'
 import Login from './Login'
+import PrivacyPolicy from './PrivacyPolicy'
 import { fetchSession, logout } from './api'
 import { navigate, usePath } from './route'
 import './theme.css'
@@ -90,7 +91,9 @@ function AdminGate() {
 
 function Root() {
   const path = usePath()
-  return path === '/lista' ? <AdminGate /> : <Gallery />
+  if (path === '/lista') return <AdminGate />
+  if (path === '/privacy-policy') return <PrivacyPolicy />
+  return <Gallery />
 }
 
 const root = createRoot(document.getElementById('root'))

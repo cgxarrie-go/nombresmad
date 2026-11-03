@@ -299,6 +299,12 @@ export default function Gallery() {
         </Paper>
       </Container>
 
+      <Box sx={{ px: 2, pb: 3, textAlign: 'center' }}>
+        <Button color="inherit" onClick={() => navigate('/privacy-policy')} sx={{ color: '#f5f5f5', opacity: 0.85 }}>
+          Política de privacidad
+        </Button>
+      </Box>
+
       <Dialog open={Boolean(current)} onClose={() => setActive(null)} maxWidth="md" fullWidth>
         {current ? (
           <Box sx={{ position: 'relative', bgcolor: '#2c2416' }}>
