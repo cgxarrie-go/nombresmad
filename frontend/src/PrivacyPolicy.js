@@ -89,9 +89,14 @@ export default function PrivacyPolicy() {
               </Typography>
             </Box>
 
-            <Button variant="contained" onClick={() => navigate('/')} sx={{ alignSelf: 'flex-start' }}>
-              Volver a la galería
-            </Button>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <Button variant="contained" onClick={() => navigate('/')} sx={{ alignSelf: 'flex-start' }}>
+                Volver a la galería
+              </Button>
+              <Button variant="text" onClick={() => navigate('/terms-of-service')} sx={{ alignSelf: 'flex-start' }}>
+                Ver Términos de servicio
+              </Button>
+            </Stack>
           </Stack>
         </Paper>
       </Container>

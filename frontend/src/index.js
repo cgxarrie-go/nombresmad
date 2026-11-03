@@ -7,6 +7,7 @@ import ChangePassword from './ChangePassword'
 import Gallery from './Gallery'
 import Login from './Login'
 import PrivacyPolicy from './PrivacyPolicy'
+import TermsOfService from './TermsOfService'
 import { fetchSession, logout } from './api'
 import { navigate, usePath } from './route'
 import './theme.css'
@@ -93,6 +94,7 @@ function Root() {
   const path = usePath()
   if (path === '/lista') return <AdminGate />
   if (path === '/privacy-policy') return <PrivacyPolicy />
+  if (path === '/terms-of-service') return <TermsOfService />
   return <Gallery />
 }
 
