@@ -2,6 +2,8 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -12,6 +14,7 @@ import (
 const (
 	legacySessionCookie = "nombresmad_session"
 	sessionTTL          = 12 * time.Hour
+	maxLoginBodyBytes   = 4 << 10
 )
 
 type authResponse struct {
@@ -29,21 +32,55 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		Username string `json:"username"`
 		Password string `json:"password"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		http.Error(w, "JSON no válido", http.StatusBadRequest)
-		return
-	}
-	if _, ok := service.NormalizeEmail(body.Username); !ok {
-		http.Error(w, "El usuario debe ser un correo electrónico", http.StatusBadRequest)
+	if !decodeLoginBody(w, r, &body) {
 		return
 	}
 	token, session, ok := s.auth.Login(strings.TrimSpace(body.Username), body.Password, time.Now().Add(sessionTTL))
 	if !ok {
-		http.Error(w, "Usuario o contraseña incorrectos", http.StatusUnauthorized)
+		http.Error(w, "No autorizado", http.StatusUnauthorized)
 		return
 	}
 	clearLegacySessionCookie(w)
 	writeJSON(w, authResponse{Username: session.Username, Token: token, MustChangePassword: session.MustChangePassword})
+}
+
+func (s *Server) loginGoogle(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "método no permitido", http.StatusMethodNotAllowed)
+		return
+	}
+	var body struct {
+		Credential string `json:"credential"`
+	}
+	if !decodeLoginBody(w, r, &body) {
+		return
+	}
+	token, session, ok := s.auth.LoginGoogle(body.Credential, time.Now().Add(sessionTTL))
+	if !ok {
+		http.Error(w, "No autorizado", http.StatusUnauthorized)
+		return
+	}
+	clearLegacySessionCookie(w)
+	writeJSON(w, authResponse{Username: session.Username, Token: token, MustChangePassword: session.MustChangePassword})
+}
+
+func decodeLoginBody(w http.ResponseWriter, r *http.Request, body any) bool {
+	r.Body = http.MaxBytesReader(w, r.Body, maxLoginBodyBytes)
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(body); err != nil {
+		var tooLarge *http.MaxBytesError
+		if errors.As(err, &tooLarge) {
+			http.Error(w, "El cuerpo de la solicitud es demasiado grande", http.StatusRequestEntityTooLarge)
+		} else {
+			http.Error(w, "JSON no válido", http.StatusBadRequest)
+		}
+		return false
+	}
+	if err := decoder.Decode(new(any)); err != io.EOF {
+		http.Error(w, "JSON no válido", http.StatusBadRequest)
+		return false
+	}
+	return true
 }
 
 func (s *Server) logout(w http.ResponseWriter, r *http.Request) {

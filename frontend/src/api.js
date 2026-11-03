@@ -35,7 +35,7 @@ api.interceptors.response.use(
   (response) => response,
   (err) => {
     const url = String(err?.config?.url || '')
-    const isLogin = url.endsWith('/login')
+    const isLogin = url.endsWith('/login') || url.endsWith('/login/google')
     if (err?.response?.status === 401 && !isLogin) {
       setToken('')
       window.dispatchEvent(new Event('nombresmad-unauthorized'))
@@ -158,8 +158,8 @@ export function isEmail(value) {
   ))
 }
 
-export async function login(username, password) {
-  const { data } = await api.post('/login', { username, password })
+async function createSession(request) {
+  const { data } = await request
   if (!data?.token) {
     const error = new Error('missing token')
     error.response = { data: 'El servidor no devolvió un token de sesión' }
@@ -167,6 +167,14 @@ export async function login(username, password) {
   }
   setToken(data.token)
   return { username: data.username, mustChangePassword: Boolean(data.mustChangePassword) }
+}
+
+export async function loginWithPassword(username, password) {
+  return createSession(api.post('/login', { username, password }))
+}
+
+export async function loginWithGoogle(credential) {
+  return createSession(api.post('/login/google', { credential }))
 }
 
 export async function changePassword(currentPassword, newPassword) {

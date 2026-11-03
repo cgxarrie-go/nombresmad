@@ -26,6 +26,7 @@ func New(items *service.Items, pictures *service.Pictures, catalog *service.Cata
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/login", withCORS(s.login))
+	mux.HandleFunc("/api/login/google", withCORS(s.loginGoogle))
 	mux.HandleFunc("/api/logout", withCORS(s.logout))
 	mux.HandleFunc("/api/session", withCORS(s.session))
 	mux.HandleFunc("/api/account/password", withCORS(s.changePassword))
