@@ -331,8 +331,15 @@
       "get": {
         "tags": ["items"],
         "summary": "List filter choices",
-        "description": "Distinct wood types, groups, and sizes currently stored.",
+        "description": "Distinct wood types, groups, and sizes currently stored. Set hasPicture=true to restrict choices to items with pictures.",
         "produces": ["application/json"],
+        "parameters": [{
+          "name": "hasPicture",
+          "in": "query",
+          "required": false,
+          "type": "boolean",
+          "description": "When true, only return choices represented by items with pictures."
+        }],
         "responses": {
           "200": {"description": "Filter choices", "schema": {"$ref": "#/definitions/Options"}},
           "500": {"description": "Database error", "schema": {"type": "string"}}

@@ -43,7 +43,17 @@ func (s *Server) options(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "método no permitido", http.StatusMethodNotAllowed)
 		return
 	}
-	woodTypes, groups, sizes, err := s.items.Options()
+	hasPicture := false
+	switch r.URL.Query().Get("hasPicture") {
+	case "":
+	case "true":
+		hasPicture = true
+	case "false":
+	default:
+		http.Error(w, "filtro de foto no válido", http.StatusBadRequest)
+		return
+	}
+	woodTypes, groups, sizes, err := s.items.Options(hasPicture)
 	if err != nil {
 		writeErr(w, err)
 		return

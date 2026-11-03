@@ -12,7 +12,7 @@ type itemStore interface {
 	Create(it model.Item) (model.Item, error)
 	Update(id int, it model.Item) (model.Item, error)
 	Delete(id int) (string, error)
-	Options() (woodTypes, groups, sizes []string, err error)
+	Options(hasPicture bool) (woodTypes, groups, sizes []string, err error)
 }
 
 type pictureRemover interface {
@@ -61,6 +61,6 @@ func (s *Items) Delete(id int) error {
 }
 
 // Options returns the distinct values used by filters.
-func (s *Items) Options() (woodTypes, groups, sizes []string, err error) {
-	return s.items.Options()
+func (s *Items) Options(hasPicture bool) (woodTypes, groups, sizes []string, err error) {
+	return s.items.Options(hasPicture)
 }

@@ -148,16 +148,20 @@ func (r *ItemRepo) SetPicture(id int, name string) error {
 }
 
 // Options lists the distinct filter values shown in the UI.
-func (r *ItemRepo) Options() (woodTypes, groups, sizes []string, err error) {
-	woodTypes, err = r.distinct(`SELECT DISTINCT woodType FROM items WHERE COALESCE(woodType, '') <> '' ORDER BY 1`)
+func (r *ItemRepo) Options(hasPicture bool) (woodTypes, groups, sizes []string, err error) {
+	pictureFilter := ""
+	if hasPicture {
+		pictureFilter = ` AND COALESCE(picture, '') <> ''`
+	}
+	woodTypes, err = r.distinct(`SELECT DISTINCT woodType FROM items WHERE COALESCE(woodType, '') <> ''` + pictureFilter + ` ORDER BY 1`)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	groups, err = r.distinct(`SELECT DISTINCT "group" FROM items WHERE COALESCE("group", '') <> '' ORDER BY 1`)
+	groups, err = r.distinct(`SELECT DISTINCT "group" FROM items WHERE COALESCE("group", '') <> ''` + pictureFilter + ` ORDER BY 1`)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	sizes, err = r.distinct(`SELECT size FROM items WHERE COALESCE(size, '') <> '' GROUP BY size ORDER BY CASE WHEN size ~ '^[0-9]+([.][0-9]+)?$' THEN size::numeric END NULLS LAST, size`)
+	sizes, err = r.distinct(`SELECT size FROM items WHERE COALESCE(size, '') <> ''` + pictureFilter + ` GROUP BY size ORDER BY CASE WHEN size ~ '^[0-9]+([.][0-9]+)?$' THEN size::numeric END NULLS LAST, size`)
 	if err != nil {
 		return nil, nil, nil, err
 	}

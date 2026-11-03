@@ -77,8 +77,10 @@ export async function fetchItems(query) {
   }
 }
 
-export async function fetchOptions() {
-  const { data } = await api.get('/options')
+export async function fetchOptions(hasPicture) {
+  const { data } = await api.get('/options', {
+    params: hasPicture == null ? undefined : { hasPicture: String(hasPicture) },
+  })
   return {
     woodTypes: data.woodTypes || [],
     groups: data.groups || [],

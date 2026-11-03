@@ -82,7 +82,7 @@ export default function Gallery() {
     fetchItems({
       page: query.page,
       pageSize: PAGE_SIZE,
-      sort: 'id',
+      sort: 'text',
       order: 'asc',
       name: query.name,
       size: query.size,
@@ -107,7 +107,7 @@ export default function Gallery() {
   }, [query])
 
   useEffect(() => {
-    fetchOptions()
+    fetchOptions(true)
       .then((data) => setOptions({ sizes: data.sizes, woodTypes: data.woodTypes }))
       .catch(() => {})
   }, [])
