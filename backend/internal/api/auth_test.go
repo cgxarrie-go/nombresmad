@@ -161,8 +161,19 @@ func (apiGoogleVerifier) Verify(_ context.Context, credential, audience string) 
 	return service.GoogleIdentity{Email: "admin@example.com", EmailVerified: true}, nil
 }
 
+type apiGoogleIdentityVerifier struct {
+	identity service.GoogleIdentity
+}
+
+func (v apiGoogleIdentityVerifier) Verify(_ context.Context, credential, audience string) (service.GoogleIdentity, error) {
+	if credential != "valid-credential" || audience != "web-client-id" {
+		return service.GoogleIdentity{}, os.ErrInvalid
+	}
+	return v.identity, nil
+}
+
 func TestGoogleLoginAndRequestValidation(t *testing.T) {
-	auth := service.NewAuth(nil, "", []byte("test-secret"), "web-client-id", apiGoogleVerifier{})
+	auth := service.NewAuth(nil, "", []byte("test-secret"), "web-client-id", []string{"admin@example.com"}, apiGoogleVerifier{})
 	srv := &Server{auth: auth}
 	google := postJSON(t, srv.loginGoogle, "/api/login/google", `{"credential":"valid-credential"}`, "")
 	if google.Username != "admin@example.com" || google.Token == "" || google.MustChangePassword {
@@ -174,6 +185,15 @@ func TestGoogleLoginAndRequestValidation(t *testing.T) {
 	srv.session(sessionRec, sessionReq)
 	if sessionRec.Code != http.StatusOK {
 		t.Fatalf("session status=%d body=%s", sessionRec.Code, sessionRec.Body.String())
+	}
+
+	unauthorizedAuth := service.NewAuth(nil, "", []byte("test-secret"), "web-client-id", []string{"admin@example.com"}, apiGoogleIdentityVerifier{
+		identity: service.GoogleIdentity{Email: "outside@example.com", EmailVerified: true},
+	})
+	unauthorizedGoogle := httptest.NewRecorder()
+	(&Server{auth: unauthorizedAuth}).loginGoogle(unauthorizedGoogle, httptest.NewRequest(http.MethodPost, "/api/login/google", strings.NewReader(`{"credential":"valid-credential"}`)))
+	if unauthorizedGoogle.Code != http.StatusUnauthorized || strings.TrimSpace(unauthorizedGoogle.Body.String()) != "No autorizado" {
+		t.Fatalf("unauthorized Google status=%d body=%q", unauthorizedGoogle.Code, unauthorizedGoogle.Body.String())
 	}
 
 	badPassword := httptest.NewRecorder()
@@ -227,7 +247,7 @@ func TestExpiredSessionAndLogout(t *testing.T) {
 
 func newTestAuth(t *testing.T, defaultPassword string) *service.Auth {
 	t.Helper()
-	return service.NewAuth(service.NewMemoryAdminStore(), defaultPassword, []byte("test-secret"), "", nil)
+	return service.NewAuth(service.NewMemoryAdminStore(), defaultPassword, []byte("test-secret"), "", []string{"admin@example.com", "bea@example.com"}, nil)
 }
 
 func requestWithToken(method, path, token string) *http.Request {

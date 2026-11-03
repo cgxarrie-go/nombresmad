@@ -1,10 +1,10 @@
 # Google authentication
 
-Use Google Identity Services for primary sign-in and retain the current password login only as a clearly separated emergency fallback. The backend accepts any Google account whose ID token is valid for this app and whose email is verified. Document local Docker and Railway/Google Cloud setup with copyable placeholders and verification steps.
+Use Google Identity Services for primary sign-in and retain the current password login only as a clearly separated emergency fallback. The backend accepts only Google accounts whose ID token is valid for this app, whose email is verified, and whose email is in `AUTHORIZED_EMAILS`. Document local Docker and Railway/Google Cloud setup with copyable placeholders and verification steps.
 
 ## Target design
 
-Use Google to verify the identity; any account with a verified email may administer the app.
+Use Google to verify the identity; only accounts with a verified email in the backend's `AUTHORIZED_EMAILS` list may administer the app.
 
 ```mermaid
 sequenceDiagram
@@ -17,7 +17,7 @@ sequenceDiagram
     Google-->>Frontend: Signed ID token
     Frontend->>Backend: POST /api/login/google
     Backend->>Google: Validate signature and claims
-    Backend->>Backend: Require verified email
+    Backend->>Backend: Require verified email in AUTHORIZED_EMAILS
     Backend-->>Frontend: Existing app bearer token
     Frontend->>Backend: Authorized API requests
 ```
@@ -52,7 +52,9 @@ The Google client secret is not needed for this browser ID-token flow. The Googl
   - `GOOGLE_CLIENT_ID` — the Web OAuth client ID,
   - `ADMIN_USER` / `ADMIN_PASSWORD` — emergency fallback credentials,
   - `ADMIN_SECRET` — a persistent, randomly generated signing secret.
+  - `AUTHORIZED_EMAILS` — a non-empty, comma-separated list of permitted email addresses.
 - Refuse to start when Google client ID or `ADMIN_SECRET` is missing. Permit the password fallback to be disabled by leaving `ADMIN_PASSWORD` empty.
+- Refuse to start when `AUTHORIZED_EMAILS` is missing or contains an invalid email. Normalize the list case-insensitively and require it for both Google and password login, as well as existing app sessions.
 
 ## 4. Replace the primary frontend form with Google sign-in
 

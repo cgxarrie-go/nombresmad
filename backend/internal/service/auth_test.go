@@ -20,7 +20,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestSessionRoundTrip(t *testing.T) {
-	auth := NewAuth(nil, "", []byte("test-secret"), "", nil)
+	auth := NewAuth(nil, "", []byte("test-secret"), "", []string{"admin@example.com"}, nil)
 	token := auth.Sign("admin@example.com", 1, time.Now().Add(time.Hour))
 	user, version, ok := auth.Read(token, time.Now())
 	if !ok || user != "admin@example.com" || version != 1 {
@@ -49,7 +49,7 @@ func TestCredentials(t *testing.T) {
 	if auth.Check("admin@example.com", "wrong") || auth.Check("other", "secret") || auth.Check("admin@example.com", "") {
 		t.Fatal("expected mismatch")
 	}
-	disabled := NewAuth(NewMemoryAdminStore(), "", []byte("test-secret"), "", nil)
+	disabled := NewAuth(NewMemoryAdminStore(), "", []byte("test-secret"), "", []string{"admin@example.com"}, nil)
 	if err := disabled.EnsureDefaultAdmin("admin@example.com"); err != nil {
 		t.Fatal(err)
 	}
@@ -60,7 +60,7 @@ func TestCredentials(t *testing.T) {
 
 func TestPasswordIsStoredHashedAndFirstLoginMustChange(t *testing.T) {
 	store := NewMemoryAdminStore()
-	auth := NewAuth(store, "secret", []byte("test-secret"), "", nil)
+	auth := NewAuth(store, "secret", []byte("test-secret"), "", []string{"admin@example.com"}, nil)
 	if err := auth.EnsureDefaultAdmin("admin@example.com"); err != nil {
 		t.Fatal(err)
 	}
@@ -180,7 +180,7 @@ func TestAdminCanResetAnotherAdminToDefault(t *testing.T) {
 
 func TestNonEmailAdminIsRejected(t *testing.T) {
 	store := NewMemoryAdminStore()
-	auth := NewAuth(store, "secret", []byte("test-secret"), "", nil)
+	auth := NewAuth(store, "secret", []byte("test-secret"), "", []string{"admin@example.com", "bea@example.com"}, nil)
 	if err := store.Insert("admin", "not-a-hash", false); err != nil {
 		t.Fatal(err)
 	}
@@ -218,7 +218,7 @@ func TestNonEmailAdminIsRejected(t *testing.T) {
 
 func testAuth(t *testing.T, defaultPassword string) *Auth {
 	t.Helper()
-	return NewAuth(NewMemoryAdminStore(), defaultPassword, []byte("test-secret"), "", nil)
+	return NewAuth(NewMemoryAdminStore(), defaultPassword, []byte("test-secret"), "", []string{"admin@example.com", "bea@example.com"}, nil)
 }
 
 type fakeGoogleVerifier struct {
@@ -239,7 +239,7 @@ func TestGoogleLoginAndSessionValidation(t *testing.T) {
 		identity: GoogleIdentity{Email: " ADMIN@example.com ", EmailVerified: true},
 		audience: "web-client-id",
 	}
-	auth := NewAuth(nil, "", []byte("test-secret"), "web-client-id", verifier)
+	auth := NewAuth(nil, "", []byte("test-secret"), "web-client-id", []string{"admin@example.com", "other@example.com"}, verifier)
 	token, session, ok := auth.LoginGoogle("valid-credential", time.Now().Add(time.Hour))
 	if !ok || session.Username != "admin@example.com" || session.MustChangePassword {
 		t.Fatalf("session=%+v ok=%v", session, ok)
@@ -251,9 +251,40 @@ func TestGoogleLoginAndSessionValidation(t *testing.T) {
 		identity: GoogleIdentity{Email: "other@example.com", EmailVerified: true},
 		audience: "web-client-id",
 	}
-	otherAuth := NewAuth(nil, "", []byte("test-secret"), "web-client-id", otherVerifier)
+	otherAuth := NewAuth(nil, "", []byte("test-secret"), "web-client-id", []string{"admin@example.com", "other@example.com"}, otherVerifier)
 	if _, otherSession, ok := otherAuth.LoginGoogle("valid-credential", time.Now().Add(time.Hour)); !ok || otherSession.Username != "other@example.com" {
 		t.Fatalf("verified Google account was rejected: session=%+v ok=%v", otherSession, ok)
+	}
+}
+
+func TestAuthenticationRequiresAuthorizedEmail(t *testing.T) {
+	store := NewMemoryAdminStore()
+	auth := NewAuth(store, "secret", []byte("test-secret"), "web-client-id", []string{"admin@example.com"}, fakeGoogleVerifier{
+		identity: GoogleIdentity{Email: "outside@example.com", EmailVerified: true},
+		audience: "web-client-id",
+	})
+	if err := auth.EnsureDefaultAdmin("admin@example.com"); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Insert("outside@example.com", "not-a-hash", false); err != nil {
+		t.Fatal(err)
+	}
+	if auth.Check("outside@example.com", "secret") {
+		t.Fatal("password check accepted an unauthorized email")
+	}
+	if _, _, ok := auth.Login("outside@example.com", "secret", time.Now().Add(time.Hour)); ok {
+		t.Fatal("password login accepted an unauthorized email")
+	}
+	if _, _, ok := auth.LoginGoogle("valid-credential", time.Now().Add(time.Hour)); ok {
+		t.Fatal("Google login accepted an unauthorized email")
+	}
+	removedGoogleSession := auth.sign(googleAuthMethod, "outside@example.com", 0, time.Now().Add(time.Hour))
+	if _, ok := auth.Session(removedGoogleSession, time.Now()); ok {
+		t.Fatal("Google session accepted an unauthorized email")
+	}
+	removedPasswordSession := auth.Sign("outside@example.com", 1, time.Now().Add(time.Hour))
+	if _, ok := auth.Session(removedPasswordSession, time.Now()); ok {
+		t.Fatal("password session accepted an unauthorized email")
 	}
 }
 
@@ -272,7 +303,7 @@ func TestGoogleLoginRejectsInvalidClaimsAndCredentials(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			verifier := fakeGoogleVerifier{identity: tt.identity, err: tt.err, audience: "web-client-id"}
-			auth := NewAuth(nil, "", []byte("test-secret"), tt.clientID, verifier)
+			auth := NewAuth(nil, "", []byte("test-secret"), tt.clientID, []string{"admin@example.com"}, verifier)
 			if _, _, ok := auth.LoginGoogle("credential", time.Now().Add(time.Hour)); ok {
 				t.Fatal("invalid Google credentials were accepted")
 			}
@@ -281,7 +312,7 @@ func TestGoogleLoginRejectsInvalidClaimsAndCredentials(t *testing.T) {
 }
 
 func TestLegacyMalformedAndExpiredTokensAreRejected(t *testing.T) {
-	auth := NewAuth(nil, "", []byte("test-secret"), "web-client-id", nil)
+	auth := NewAuth(nil, "", []byte("test-secret"), "web-client-id", []string{"admin@example.com"}, nil)
 	legacyPayload := []byte("admin@example.com|1|1")
 	mac := hmac.New(sha256.New, auth.secret)
 	_, _ = mac.Write(legacyPayload)

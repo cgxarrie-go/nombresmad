@@ -49,16 +49,17 @@ func (googleIDTokenVerifier) Verify(ctx context.Context, credential, audience st
 
 // Auth checks administrator credentials and signs session tokens.
 type Auth struct {
-	users           AdminStore
-	defaultPassword string
-	secret          []byte
-	dummyHash       string
-	googleClientID  string
-	googleVerifier  GoogleTokenVerifier
+	users            AdminStore
+	defaultPassword  string
+	secret           []byte
+	dummyHash        string
+	googleClientID   string
+	authorizedEmails map[string]struct{}
+	googleVerifier   GoogleTokenVerifier
 }
 
-// NewAuth uses the account store, fallback credentials, session secret, and Google configuration.
-func NewAuth(users AdminStore, defaultPassword string, secret []byte, googleClientID string, verifier GoogleTokenVerifier) *Auth {
+// NewAuth uses the account store, fallback credentials, session secret, Google configuration, and authorized emails.
+func NewAuth(users AdminStore, defaultPassword string, secret []byte, googleClientID string, authorizedEmails []string, verifier GoogleTokenVerifier) *Auth {
 	dummy, err := HashPassword(randomToken())
 	if err != nil {
 		dummy = ""
@@ -66,13 +67,20 @@ func NewAuth(users AdminStore, defaultPassword string, secret []byte, googleClie
 	if verifier == nil {
 		verifier = googleIDTokenVerifier{}
 	}
+	allowed := make(map[string]struct{}, len(authorizedEmails))
+	for _, address := range authorizedEmails {
+		if email, ok := NormalizeEmail(address); ok {
+			allowed[email] = struct{}{}
+		}
+	}
 	return &Auth{
-		users:           users,
-		defaultPassword: defaultPassword,
-		secret:          secret,
-		dummyHash:       dummy,
-		googleClientID:  googleClientID,
-		googleVerifier:  verifier,
+		users:            users,
+		defaultPassword:  defaultPassword,
+		secret:           secret,
+		dummyHash:        dummy,
+		googleClientID:   googleClientID,
+		authorizedEmails: allowed,
+		googleVerifier:   verifier,
 	}
 }
 
@@ -84,7 +92,7 @@ func (a *Auth) Check(username, password string) bool {
 
 func (a *Auth) authenticate(username, password string) (storedUsername string, version int, mustChange bool, ok bool) {
 	email, emailOK := NormalizeEmail(username)
-	if a == nil || !emailOK || password == "" || len(password) > 1024 {
+	if a == nil || !emailOK || !a.isAuthorized(email) || password == "" || len(password) > 1024 {
 		return "", 0, false, false
 	}
 	username = email
@@ -125,7 +133,7 @@ func (a *Auth) LoginGoogle(credential string, expires time.Time) (string, Sessio
 		return "", Session{}, false
 	}
 	email, ok := NormalizeEmail(identity.Email)
-	if !ok {
+	if !ok || !a.isAuthorized(email) {
 		return "", Session{}, false
 	}
 	return a.sign(googleAuthMethod, email, 0, expires), Session{Username: email}, true
@@ -140,7 +148,7 @@ func (a *Auth) Session(token string, now time.Time) (Session, bool) {
 	switch method {
 	case googleAuthMethod:
 		email, emailOK := NormalizeEmail(principal)
-		if !emailOK || email != principal {
+		if !emailOK || email != principal || !a.isAuthorized(email) {
 			return Session{}, false
 		}
 		return Session{Username: principal}, true
@@ -149,7 +157,7 @@ func (a *Auth) Session(token string, now time.Time) (Session, bool) {
 			return Session{}, false
 		}
 		email, emailOK := NormalizeEmail(principal)
-		if !emailOK {
+		if !emailOK || !a.isAuthorized(email) {
 			return Session{}, false
 		}
 		rec, err := a.users.ByUsername(email)
@@ -160,6 +168,11 @@ func (a *Auth) Session(token string, now time.Time) (Session, bool) {
 	default:
 		return Session{}, false
 	}
+}
+
+func (a *Auth) isAuthorized(email string) bool {
+	_, ok := a.authorizedEmails[email]
+	return ok
 }
 
 func hashEqual(a, b string) bool {

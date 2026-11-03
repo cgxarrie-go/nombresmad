@@ -30,6 +30,7 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD?Set_ADMIN_PASSWORD_in_.env_or_empty_to_disable}
       ADMIN_SECRET: ${ADMIN_SECRET?Set_ADMIN_SECRET_in_.env}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID?Set_GOOGLE_CLIENT_ID_in_.env}
+      AUTHORIZED_EMAILS: ${AUTHORIZED_EMAILS?Set_AUTHORIZED_EMAILS_in_.env}
       NOMAD_JSON: /app/seed_data/initial_load.json
     ports:
       - 8080:8080

@@ -4,7 +4,7 @@ This repository contains a Go backend and React frontend for the NombresMad app.
 
 ## Google sign-in setup
 
-Google proves the user's identity; the Go backend verifies the ID token and issues the app's own 12-hour bearer token to any Google account with a verified email. No Google client secret is needed for this browser ID-token flow.
+Google proves the user's identity; the Go backend verifies the ID token and issues the app's own 12-hour bearer token only to Google accounts with a verified email listed in `AUTHORIZED_EMAILS`. No Google client secret is needed for this browser ID-token flow.
 
 ### Configure Google Cloud
 
@@ -30,6 +30,7 @@ GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 ADMIN_SECRET=replace-with-output-from-openssl-rand-base64-48
 ADMIN_USER=admin@example.com
 ADMIN_PASSWORD=replace-with-a-unique-high-entropy-password
+AUTHORIZED_EMAILS=admin@example.com,another@example.com
 ```
 
 Generate the signing secret with:
@@ -46,7 +47,7 @@ Start the local services:
 docker-compose up --build
 ```
 
-The frontend is available at `http://localhost:3000` and the API at `http://localhost:8080`. `GOOGLE_CLIENT_ID` is supplied to the backend as `GOOGLE_CLIENT_ID` and to the frontend build/runtime as `REACT_APP_GOOGLE_CLIENT_ID`. The backend fails to start if `GOOGLE_CLIENT_ID` or `ADMIN_SECRET` is missing.
+The frontend is available at `http://localhost:3000` and the API at `http://localhost:8080`. `GOOGLE_CLIENT_ID` is supplied to the backend as `GOOGLE_CLIENT_ID` and to the frontend build/runtime as `REACT_APP_GOOGLE_CLIENT_ID`. `AUTHORIZED_EMAILS` is a comma-separated list of exact email addresses permitted to sign in, including `ADMIN_USER` if password fallback is enabled. The backend fails to start if `GOOGLE_CLIENT_ID`, `ADMIN_SECRET`, or a valid non-empty `AUTHORIZED_EMAILS` list is missing. Emails are matched case-insensitively; a change to the list immediately invalidates sessions for removed addresses after restart.
 
 For running services outside Docker, configure the same environment variables. From `backend`, run `go run ./cmd`; from `frontend`, run `npm install` and `npm start`. Run `./import.sh` from `backend` when the database needs its initial data.
 
@@ -65,6 +66,7 @@ GOOGLE_CLIENT_ID=<same Web OAuth client ID used by frontend>
 ADMIN_SECRET=<output from openssl rand -base64 48>
 ADMIN_USER=<emergency admin email>
 ADMIN_PASSWORD=<unique high-entropy emergency password>
+AUTHORIZED_EMAILS=<comma-separated list of permitted email addresses>
 ```
 
 Set `REACT_APP_GOOGLE_CLIENT_ID` to the same client ID on the frontend service. Also set `API_PROXY_TARGET` on the frontend service to `http://<backend-private-domain>:<backend-port>` using the backend's Railway private domain and assigned `PORT`; do not append `/api`. Add the exact production frontend origin to the Google OAuth client's authorized JavaScript origins.
@@ -73,7 +75,7 @@ Configure variables in Railway's service settings, then redeploy the backend and
 
 ### Authentication verification checklist
 
-- Any Google account with a valid ID token and verified email can sign in.
+- Only a Google account with a valid ID token, verified email, and an address in `AUTHORIZED_EMAILS` can sign in.
 - The emergency password login works with the configured fallback credentials (or is unavailable when `ADMIN_PASSWORD` is empty).
 - Logging out clears the local bearer token; expired sessions are rejected.
 - Protected write operations reject requests without a currently valid bearer token.
