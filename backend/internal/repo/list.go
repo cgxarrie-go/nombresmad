@@ -85,15 +85,7 @@ func parseListQuery(values url.Values) (listQuery, error) {
 	var where []string
 	if s := strings.TrimSpace(values.Get("q")); s != "" {
 		lq.Args = append(lq.Args, likePattern(s))
-		p := len(lq.Args)
-		where = append(where, fmt.Sprintf(`(
-			COALESCE(text, '') ILIKE $%d ESCAPE '\' OR
-			COALESCE("group", '') ILIKE $%d ESCAPE '\' OR
-			COALESCE(woodType, '') ILIKE $%d ESCAPE '\' OR
-			COALESCE(deliveredTo, '') ILIKE $%d ESCAPE '\' OR
-			COALESCE(size, '') ILIKE $%d ESCAPE '\' OR
-			COALESCE(thicknesses, '') ILIKE $%d ESCAPE '\'
-		)`, p, p, p, p, p, p))
+		where = append(where, fmt.Sprintf(`COALESCE(text, '') ILIKE $%d ESCAPE '\'`, len(lq.Args)))
 	}
 	if s := strings.TrimSpace(values.Get("group")); s != "" {
 		lq.Args = append(lq.Args, likePattern(s))
