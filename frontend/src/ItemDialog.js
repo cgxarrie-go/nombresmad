@@ -15,6 +15,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import { pictureSrc } from './api'
 
 const DATE_RE = /^(\d{2})\/(\d{2})\/(\d{4})$/
@@ -174,10 +175,24 @@ export default function ItemDialog({ open, mode, item, loading, saving, options,
 
   return (
     <Dialog open={open} onClose={() => { if (!saving) onClose() }} fullWidth maxWidth="sm">
-      <DialogTitle sx={{ pb: 0.5 }}>
-        {title}
-        {item?.id ? (
-          <Typography variant="body2" color="text.secondary"># {item.id}</Typography>
+      <DialogTitle sx={{ pb: 0.5, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
+        <Box>
+          {title}
+          {item?.id ? (
+            <Typography variant="body2" color="text.secondary"># {item.id}</Typography>
+          ) : null}
+        </Box>
+        {readOnly ? (
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<EditOutlinedIcon />}
+            onClick={onEdit}
+            disabled={loading}
+            sx={{ flexShrink: 0 }}
+          >
+            Editar
+          </Button>
         ) : null}
       </DialogTitle>
       <BoxForm onSubmit={handleSubmit}>
@@ -247,7 +262,6 @@ export default function ItemDialog({ open, mode, item, loading, saving, options,
             <>
               <Button onClick={onClose}>Cerrar</Button>
               <Button color="error" onClick={onDelete}>Eliminar</Button>
-              <Button variant="contained" onClick={onEdit}>Editar</Button>
             </>
           ) : (
             <>
