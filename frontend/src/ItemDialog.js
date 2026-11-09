@@ -316,10 +316,10 @@ function MobileDetails({ item }) {
   const fields = [
     { key: 'group', label: 'Grupo' },
     { key: 'size', label: 'Tamaño' },
+    { key: 'thicknesses', label: 'Grosor' },
     { key: 'woodType', label: 'Madera' },
     { key: 'deliveredTo', label: 'Entregado' },
     { key: 'deliveryDate', label: 'Fecha de entrega' },
-    { key: 'thicknesses', label: 'Grosor' },
     { key: 'deliveredWithBox', label: 'Entregado con caja' },
     { key: 'price', label: 'Precio', suffix: ' €' },
   ]
@@ -327,35 +327,30 @@ function MobileDetails({ item }) {
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 2, mb: 2.5 }}>
-        <Typography component="h2" variant="h4" sx={{ fontSize: '1.8rem', fontWeight: 400, overflowWrap: 'anywhere' }}>
-          {displayValue(item, 'text')}
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, minWidth: 0 }}>
+          <Typography component="h2" variant="h4" sx={{ fontSize: '1.8rem', fontWeight: 400, overflowWrap: 'anywhere' }}>
+            {displayValue(item, 'text')}
+          </Typography>
+          <Box
+            role="img"
+            aria-label={`${String(item.deliveredTo || '').trim() ? 'Entregado' : 'No entregado'}${item.deliveredWithBox ? ' con caja' : ''}`}
+            sx={{ display: 'flex', alignItems: 'center', gap: 0.25, flexShrink: 0 }}
+          >
+            <PersonRoundedIcon
+              aria-hidden="true"
+              sx={{ fontSize: '1.8rem', color: String(item.deliveredTo || '').trim() ? 'success.main' : 'error.main' }}
+            />
+            {item.deliveredWithBox ? (
+              <CardGiftcardIcon aria-hidden="true" sx={{ fontSize: '1.6rem', color: '#f9a825' }} />
+            ) : null}
+          </Box>
+        </Box>
         <Typography component="time" variant="h5" sx={{ flexShrink: 0, fontWeight: 700 }}>
           {displayValue(item, 'dateCreated')}
         </Typography>
       </Box>
       <Stack spacing={2.25}>
-        {fields.map((field) => field.key === 'deliveredTo' ? (
-          <Box key={field.key} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 2 }}>
-            <Typography sx={{ color: 'text.secondary', fontSize: '1.2rem' }}>{field.label}</Typography>
-            <Box
-              role="img"
-              aria-label={`${String(item.deliveredTo || '').trim() ? 'Entregado' : 'No entregado'}${item.deliveredWithBox ? ' con caja' : ''}`}
-              sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}
-            >
-              <PersonRoundedIcon
-                aria-hidden="true"
-                sx={{ fontSize: '2rem', color: String(item.deliveredTo || '').trim() ? 'success.main' : 'error.main' }}
-              />
-              {item.deliveredWithBox ? (
-                <CardGiftcardIcon aria-hidden="true" sx={{ fontSize: '1.8rem', color: '#f9a825' }} />
-              ) : null}
-              <Typography sx={{ textAlign: 'right', fontSize: '1.2rem', fontWeight: 700, overflowWrap: 'anywhere' }}>
-                {displayValue(item, field.key)}
-              </Typography>
-            </Box>
-          </Box>
-        ) : (
+        {fields.map((field) => (
           <Box key={field.key} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 2 }}>
             <Typography sx={{ color: 'text.secondary', fontSize: '1.2rem' }}>{field.label}</Typography>
             <Typography sx={{ textAlign: 'right', fontSize: '1.2rem', fontWeight: 700, overflowWrap: 'anywhere' }}>
