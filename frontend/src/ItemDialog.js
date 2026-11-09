@@ -184,10 +184,10 @@ export default function ItemDialog({ open, mode, item, loading, saving, options,
       fullScreen={mobileDetail}
       fullWidth
       maxWidth="sm"
-      PaperProps={mobileDetail ? { sx: { bgcolor: '#fff' } } : undefined}
+      PaperProps={mobileDetail ? { sx: { bgcolor: 'background.paper' } } : undefined}
     >
       {mobileDetail ? (
-        <DialogTitle sx={{ px: 2, py: 1.5, display: 'flex', alignItems: 'center', gap: 1, bgcolor: '#2196f3', color: '#fff' }}>
+        <DialogTitle sx={{ px: 2, py: 1.5, display: 'flex', alignItems: 'center', gap: 1, bgcolor: 'primary.main', color: 'primary.contrastText' }}>
           <Button
             aria-label="Volver"
             onClick={onClose}
@@ -241,15 +241,17 @@ export default function ItemDialog({ open, mode, item, loading, saving, options,
                   onRemove={clearPicture}
                 />
               )}
-              {readOnly && !mobileDetail ? (
-                <Grid container spacing={2} sx={{ pt: 1 }}>
-                  {FIELDS.map((field) => (
-                    <Grid item xs={12} sm={field.full ? 12 : 6} key={field.key}>
-                      <Typography variant="caption" color="text.secondary">{field.label}</Typography>
-                      <Typography>{displayValue(form, field.key)}</Typography>
-                    </Grid>
-                  ))}
-                </Grid>
+              {readOnly ? (
+                mobileDetail ? null : (
+                  <Grid container spacing={2} sx={{ pt: 1 }}>
+                    {FIELDS.map((field) => (
+                      <Grid item xs={12} sm={field.full ? 12 : 6} key={field.key}>
+                        <Typography variant="caption" color="text.secondary">{field.label}</Typography>
+                        <Typography>{displayValue(form, field.key)}</Typography>
+                      </Grid>
+                    ))}
+                  </Grid>
+                )
               ) : (
                 <Grid container spacing={1.5} sx={{ pt: 1 }}>
                   {FIELDS.map((field) => (
