@@ -10,7 +10,12 @@ html, body, #root { height: 100%; margin: 0; }
 .table-scroll thead th { position: sticky; top: 0; z-index: 2; }
 .table-scroll .actions-cell { white-space: nowrap; width: 118px; }
 .table-scroll .actions-compact { display: none; }
+.mobile-items-list { display: none; }
 @media (max-width: 900px) {
   .table-scroll .actions-wide { display: none; }
   .table-scroll .actions-compact { display: table-cell; }
+}
+@media (max-width: 600px) {
+  .desktop-items-table { display: none; }
+  .mobile-items-list { display: block; }
 }
