@@ -58,14 +58,12 @@ import {
 } from './api'
 
 const COLUMNS = [
-  { id: 'id', label: 'Nº', width: 64 },
-  { id: 'picture', label: 'Foto', width: 56, sortable: false },
+  { id: 'id', label: 'Número', width: 76 },
+  { id: 'dateCreated', label: 'Fecha de creación', minWidth: 140 },
   { id: 'text', label: 'Nombre', minWidth: 140 },
-  { id: 'group', label: 'Grupo', minWidth: 140 },
-  { id: 'woodType', label: 'Madera', minWidth: 120 },
-  { id: 'size', label: 'Tamaño', width: 84 },
   { id: 'deliveredTo', label: 'Entregado a', minWidth: 140 },
-  { id: 'deliveryDate', label: 'Entrega', width: 112 },
+  { id: 'group', label: 'Grupo', minWidth: 140 },
+  { id: 'deliveryDate', label: 'Fecha de entrega', minWidth: 140 },
   { id: 'price', label: 'Precio', width: 80, align: 'right' },
   { id: 'deliveredWithBox', label: 'Caja', width: 80 },
 ]
@@ -217,11 +215,14 @@ export default function App({ username, onLogout }) {
   }
 
   function askDelete(item) {
+    const requiredText = String(item.text || item.id).trim()
     setConfirm({
       title: 'Eliminar nombre',
-      body: `¿Eliminar “${item.text || item.id}”? Esta acción no se puede deshacer.`,
+      body: `Para confirmar la eliminación, escribe el nombre “${requiredText}”. Esta acción no se puede deshacer.`,
       confirmLabel: 'Eliminar',
       danger: true,
+      requiredText,
+      inputText: '',
       run: async () => {
         await deleteItem(item.id)
         if (editor?.item?.id === item.id) closeEditor()
@@ -335,8 +336,8 @@ export default function App({ username, onLogout }) {
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1.5fr 1fr 1fr 140px 150px' }, gap: 1.5, alignItems: 'center' }}>
             <TextField
               size="small"
-              label="Buscar"
-              placeholder="Nombre, grupo, madera, entrega…"
+              label="Buscar por nombre"
+              placeholder="Nombre"
               value={qInput}
               onChange={(event) => setQInput(event.target.value)}
               InputProps={{
@@ -551,10 +552,25 @@ export default function App({ username, onLogout }) {
         <DialogTitle>{confirm?.title}</DialogTitle>
         <DialogContent>
           <Typography>{confirm?.body}</Typography>
+          {confirm?.requiredText != null ? (
+            <TextField
+              autoFocus
+              fullWidth
+              margin="normal"
+              label="Nombre"
+              value={confirm.inputText}
+              onChange={(event) => setConfirm((current) => current && ({ ...current, inputText: event.target.value }))}
+            />
+          ) : null}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => setConfirm(null)} disabled={confirming}>Cancelar</Button>
-          <Button variant="contained" color={confirm?.danger ? 'error' : 'primary'} onClick={runConfirm} disabled={confirming}>
+          <Button
+            variant="contained"
+            color={confirm?.danger ? 'error' : 'primary'}
+            onClick={runConfirm}
+            disabled={confirming || (confirm?.requiredText != null && confirm.inputText.trim() !== confirm.requiredText)}
+          >
             {confirm?.confirmLabel}
           </Button>
         </DialogActions>

@@ -70,11 +70,24 @@ func TestParseListQueryFilters(t *testing.T) {
 	if lq.Args[2] != "TECA" || lq.Args[3] != true {
 		t.Fatalf("args=%v", lq.Args)
 	}
-	if strings.Count(lq.WhereSQL, "$1") != 6 {
-		t.Fatalf("search placeholder reused: %s", lq.WhereSQL)
+	if !strings.Contains(lq.WhereSQL, `COALESCE(text, '') ILIKE $1 ESCAPE '\'`) {
+		t.Fatalf("name search missing: %s", lq.WhereSQL)
 	}
 	if !strings.Contains(lq.WhereSQL, "woodType = $3") {
 		t.Fatalf("where=%s", lq.WhereSQL)
+	}
+}
+
+func TestParseListQueryGeneralSearchOnlyMatchesName(t *testing.T) {
+	lq, err := parseListQuery(url.Values{"q": {"madera"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if lq.WhereSQL != `COALESCE(text, '') ILIKE $1 ESCAPE '\'` {
+		t.Fatalf("where=%s", lq.WhereSQL)
+	}
+	if len(lq.Args) != 1 || lq.Args[0] != "%madera%" {
+		t.Fatalf("args=%v", lq.Args)
 	}
 }
 
