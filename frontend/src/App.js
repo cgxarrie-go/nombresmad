@@ -34,6 +34,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import FilterAltOffIcon from '@mui/icons-material/FilterAltOff'
 import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined'
+import PersonRoundedIcon from '@mui/icons-material/PersonRounded'
 import SearchIcon from '@mui/icons-material/Search'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import InputAdornment from '@mui/material/InputAdornment'
@@ -396,7 +397,7 @@ export default function App({ username, onLogout }) {
         <Paper sx={{ overflow: 'hidden' }}>
           {loading ? <LinearProgress /> : <Box sx={{ height: 4 }} />}
           {loadError ? <Alert severity="error" sx={{ m: 2 }}>{loadError}</Alert> : null}
-          <TableContainer className="table-scroll">
+          <TableContainer className="table-scroll desktop-items-table">
             <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow>
@@ -456,6 +457,70 @@ export default function App({ username, onLogout }) {
               </TableBody>
             </Table>
           </TableContainer>
+          <Box className="mobile-items-list">
+            {!loading && pageData.items.length === 0 ? (
+              <Typography sx={{ py: 6, textAlign: 'center', color: 'text.secondary' }}>
+                {filtersActive ? 'Ningún nombre coincide con los filtros.' : 'Todavía no hay nombres.'}
+              </Typography>
+            ) : pageData.items.map((item) => {
+              const deliveredTo = String(item.deliveredTo || '').trim()
+              const delivered = Boolean(deliveredTo)
+              const details = [item.size, item.woodType].filter(Boolean).join(' | ')
+              return (
+                <Box
+                  key={item.id}
+                  component="button"
+                  type="button"
+                  onClick={() => openExisting('view', item)}
+                  aria-label={`${item.text || 'Nombre'}, ${delivered ? 'entregado' : 'no entregado'}`}
+                  sx={{
+                    width: '100%',
+                    minHeight: 76,
+                    px: 1.5,
+                    py: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    border: 0,
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
+                    bgcolor: 'transparent',
+                    color: 'inherit',
+                    font: 'inherit',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    '&:last-child': { borderBottom: 0 },
+                    '&:hover': { bgcolor: 'action.hover' },
+                  }}
+                >
+                  <PersonRoundedIcon
+                    aria-hidden="true"
+                    sx={{ flex: '0 0 auto', fontSize: 42, color: delivered ? 'success.main' : 'error.main' }}
+                  />
+                  <Typography
+                    variant="h6"
+                    component="span"
+                    noWrap
+                    sx={{ flex: '1 1 42%', minWidth: 0, fontSize: '1.15rem', fontWeight: 500 }}
+                  >
+                    {item.text || '—'}
+                  </Typography>
+                  <Box sx={{ flex: '1 1 58%', minWidth: 0, textAlign: 'right' }}>
+                    {deliveredTo ? (
+                      <Typography variant="body2" component="div" color="text.secondary" noWrap sx={{ fontSize: '0.9rem' }}>
+                        {deliveredTo}
+                      </Typography>
+                    ) : null}
+                    {details ? (
+                      <Typography variant="body2" component="div" color="text.secondary" noWrap sx={{ mt: 0.5, fontSize: '0.9rem' }}>
+                        {details}
+                      </Typography>
+                    ) : null}
+                  </Box>
+                </Box>
+              )
+            })}
+          </Box>
           <TablePagination
             component="div"
             count={pageData.total}
