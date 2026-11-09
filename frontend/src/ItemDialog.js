@@ -14,7 +14,9 @@ import {
   Switch,
   TextField,
   Typography,
+  useMediaQuery,
 } from '@mui/material'
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import { pictureSrc } from './api'
 
@@ -128,6 +130,8 @@ export default function ItemDialog({ open, mode, item, loading, saving, options,
   const [removePicture, setRemovePicture] = useState(false)
   const [pictureError, setPictureError] = useState('')
   const readOnly = mode === 'view'
+  const mobile = useMediaQuery('(max-width:600px)')
+  const mobileDetail = mobile && readOnly
 
   useEffect(() => {
     if (item) setForm(item)
@@ -174,43 +178,70 @@ export default function ItemDialog({ open, mode, item, loading, saving, options,
   const title = mode === 'create' ? 'Nuevo nombre' : mode === 'edit' ? 'Editar nombre' : 'Detalle del nombre'
 
   return (
-    <Dialog open={open} onClose={() => { if (!saving) onClose() }} fullWidth maxWidth="sm">
-      <DialogTitle sx={{ pb: 0.5, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
-        <Box>
-          {title}
-          {item?.id ? (
-            <Typography variant="body2" color="text.secondary"># {item.id}</Typography>
-          ) : null}
-        </Box>
-        {readOnly ? (
+    <Dialog
+      open={open}
+      onClose={() => { if (!saving) onClose() }}
+      fullScreen={mobileDetail}
+      fullWidth
+      maxWidth="sm"
+      PaperProps={mobileDetail ? { sx: { bgcolor: '#fff' } } : undefined}
+    >
+      {mobileDetail ? (
+        <DialogTitle sx={{ px: 2, py: 1.5, display: 'flex', alignItems: 'center', gap: 1, bgcolor: '#2196f3', color: '#fff' }}>
           <Button
-            size="small"
-            variant="outlined"
-            startIcon={<EditOutlinedIcon />}
-            onClick={onEdit}
-            disabled={loading}
-            sx={{ flexShrink: 0 }}
+            aria-label="Volver"
+            onClick={onClose}
+            color="inherit"
+            sx={{ minWidth: 40, p: 0.5 }}
           >
-            Editar
+            <ArrowBackIcon />
           </Button>
-        ) : null}
-      </DialogTitle>
+          <Typography component="span" variant="h6" noWrap sx={{ fontWeight: 600, textTransform: 'uppercase' }}>
+            {item?.text || 'Detalle del nombre'}
+          </Typography>
+        </DialogTitle>
+      ) : (
+        <DialogTitle sx={{ pb: 0.5, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
+          <Box>
+            {title}
+            {item?.id ? (
+              <Typography variant="body2" color="text.secondary"># {item.id}</Typography>
+            ) : null}
+          </Box>
+          {readOnly ? (
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<EditOutlinedIcon />}
+              onClick={onEdit}
+              disabled={loading}
+              sx={{ flexShrink: 0 }}
+            >
+              Editar
+            </Button>
+          ) : null}
+        </DialogTitle>
+      )}
       <BoxForm onSubmit={handleSubmit}>
-        <DialogContent>
+        <DialogContent sx={mobileDetail ? { px: 2, pt: 2, pb: 3 } : undefined}>
           {loading ? (
             <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>Cargando…</Typography>
           ) : (
             <>
-              <PictureBlock
-                readOnly={readOnly}
-                item={form}
-                file={pictureFile}
-                removed={removePicture}
-                error={pictureError}
-                onPick={choosePicture}
-                onRemove={clearPicture}
-              />
-              {readOnly ? (
+              {mobileDetail ? (
+                <MobileDetails item={form} />
+              ) : (
+                <PictureBlock
+                  readOnly={readOnly}
+                  item={form}
+                  file={pictureFile}
+                  removed={removePicture}
+                  error={pictureError}
+                  onPick={choosePicture}
+                  onRemove={clearPicture}
+                />
+              )}
+              {readOnly && !mobileDetail ? (
                 <Grid container spacing={2} sx={{ pt: 1 }}>
                   {FIELDS.map((field) => (
                     <Grid item xs={12} sm={field.full ? 12 : 6} key={field.key}>
@@ -257,7 +288,7 @@ export default function ItemDialog({ open, mode, item, loading, saving, options,
             </>
           )}
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        {mobileDetail ? null : <DialogActions sx={{ px: 3, pb: 2 }}>
           {readOnly ? (
             <>
               <Button onClick={onClose}>Cerrar</Button>
@@ -271,13 +302,54 @@ export default function ItemDialog({ open, mode, item, loading, saving, options,
               </Button>
             </>
           )}
-        </DialogActions>
+        </DialogActions>}
       </BoxForm>
     </Dialog>
   )
 }
 
-function PictureBlock({ readOnly, item, file, removed, error, onPick, onRemove }) {
+function MobileDetails({ item }) {
+  const fields = [
+    { key: 'group', label: 'Grupo' },
+    { key: 'size', label: 'Tamaño' },
+    { key: 'woodType', label: 'Madera' },
+    { key: 'deliveredTo', label: 'Entregado' },
+    { key: 'deliveryDate', label: 'Fecha de entrega' },
+    { key: 'thicknesses', label: 'Grosor' },
+    { key: 'deliveredWithBox', label: 'Entregado con caja' },
+    { key: 'price', label: 'Precio', suffix: ' €' },
+  ]
+
+  return (
+    <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 2, mb: 2.5 }}>
+        <Typography component="h2" variant="h4" sx={{ fontSize: '1.8rem', fontWeight: 400, overflowWrap: 'anywhere' }}>
+          {displayValue(item, 'text')}
+        </Typography>
+        <Typography component="time" variant="h5" sx={{ flexShrink: 0, fontWeight: 700 }}>
+          {displayValue(item, 'dateCreated')}
+        </Typography>
+      </Box>
+      <Stack spacing={2.25}>
+        {fields.map((field) => (
+          <Box key={field.key} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 2 }}>
+            <Typography sx={{ color: 'text.secondary', fontSize: '1.2rem' }}>{field.label}</Typography>
+            <Typography sx={{ textAlign: 'right', fontSize: '1.2rem', fontWeight: 700, overflowWrap: 'anywhere' }}>
+              {`${displayValue(item, field.key)}${field.suffix || ''}`}
+            </Typography>
+          </Box>
+        ))}
+      </Stack>
+      {item.picture ? (
+        <Box sx={{ mt: 3 }}>
+          <PictureBlock readOnly item={item} linkExisting={false} />
+        </Box>
+      ) : null}
+    </Box>
+  )
+}
+
+function PictureBlock({ readOnly, item, file, removed, error, onPick, onRemove, linkExisting = true }) {
   const inputRef = useRef(null)
   const previewUrl = useMemo(() => (file ? URL.createObjectURL(file) : ''), [file])
   useEffect(() => {
@@ -293,7 +365,7 @@ function PictureBlock({ readOnly, item, file, removed, error, onPick, onRemove }
     <Box sx={{ mb: 1 }}>
       <Typography variant="caption" color="text.secondary">Foto</Typography>
       {src ? (
-        existing && !previewUrl ? (
+        existing && !previewUrl && linkExisting ? (
           <Box component="a" href={existing} target="_blank" rel="noreferrer" sx={{ display: 'inline-block', mt: 0.5 }}>
             <Box component="img" src={src} alt={alt} sx={{ display: 'block', maxWidth: '100%', maxHeight: 280, objectFit: 'contain', borderRadius: 1, bgcolor: 'action.hover' }} />
           </Box>
