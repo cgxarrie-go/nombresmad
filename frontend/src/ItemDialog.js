@@ -17,7 +17,9 @@ import {
   useMediaQuery,
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
+import CardGiftcardIcon from '@mui/icons-material/CardGiftcard'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
+import PersonRoundedIcon from '@mui/icons-material/PersonRounded'
 import { pictureSrc } from './api'
 
 const DATE_RE = /^(\d{2})\/(\d{2})\/(\d{4})$/
@@ -333,7 +335,27 @@ function MobileDetails({ item }) {
         </Typography>
       </Box>
       <Stack spacing={2.25}>
-        {fields.map((field) => (
+        {fields.map((field) => field.key === 'deliveredTo' ? (
+          <Box key={field.key} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 2 }}>
+            <Typography sx={{ color: 'text.secondary', fontSize: '1.2rem' }}>{field.label}</Typography>
+            <Box
+              role="img"
+              aria-label={`${String(item.deliveredTo || '').trim() ? 'Entregado' : 'No entregado'}${item.deliveredWithBox ? ' con caja' : ''}`}
+              sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}
+            >
+              <PersonRoundedIcon
+                aria-hidden="true"
+                sx={{ fontSize: '2rem', color: String(item.deliveredTo || '').trim() ? 'success.main' : 'error.main' }}
+              />
+              {item.deliveredWithBox ? (
+                <CardGiftcardIcon aria-hidden="true" sx={{ fontSize: '1.8rem', color: '#f9a825' }} />
+              ) : null}
+              <Typography sx={{ textAlign: 'right', fontSize: '1.2rem', fontWeight: 700, overflowWrap: 'anywhere' }}>
+                {displayValue(item, field.key)}
+              </Typography>
+            </Box>
+          </Box>
+        ) : (
           <Box key={field.key} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 2 }}>
             <Typography sx={{ color: 'text.secondary', fontSize: '1.2rem' }}>{field.label}</Typography>
             <Typography sx={{ textAlign: 'right', fontSize: '1.2rem', fontWeight: 700, overflowWrap: 'anywhere' }}>

@@ -312,8 +312,8 @@ export default function App({ username, onLogout }) {
           </Box>
           <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
             <Button variant="outlined" onClick={() => navigate('/')}>Galería</Button>
-            <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>Nuevo</Button>
-            <Button variant="outlined" onClick={(event) => setMenuAnchor(event.currentTarget)}>Mantenimiento</Button>
+            <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate} sx={{ display: { xs: 'none', sm: 'inline-flex' } }}>Nuevo</Button>
+            <Button variant="outlined" onClick={(event) => setMenuAnchor(event.currentTarget)} sx={{ display: { xs: 'none', sm: 'inline-flex' } }}>Mantenimiento</Button>
             <Tooltip title={username ? `Salir (${username})` : 'Salir'}>
               <IconButton
                 aria-label={username ? `Salir (${username})` : 'Salir'}
