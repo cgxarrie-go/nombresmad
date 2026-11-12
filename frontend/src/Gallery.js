@@ -7,7 +7,6 @@ import {
   Dialog,
   IconButton,
   LinearProgress,
-  MenuItem,
   Paper,
   TablePagination,
   TextField,
@@ -22,7 +21,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import CloseIcon from '@mui/icons-material/Close'
 import FilterAltOffIcon from '@mui/icons-material/FilterAltOff'
 import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined'
-import { errorMessage, fetchItems, fetchOptions, fetchSession, logout, pictureSrc } from './api'
+import { errorMessage, fetchItems, fetchSession, logout, pictureSrc } from './api'
 import { esES } from '@mui/material/locale'
 import { navigate } from './route'
 
@@ -59,10 +58,9 @@ function caption(item) {
 }
 
 export default function Gallery() {
-  const [query, setQuery] = useState({ page: 1, name: '', size: '', woodType: '' })
+  const [query, setQuery] = useState({ page: 1, name: '' })
   const [nameInput, setNameInput] = useState('')
   const [pageData, setPageData] = useState(EMPTY_PAGE)
-  const [options, setOptions] = useState({ sizes: [], woodTypes: [] })
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [active, setActive] = useState(null)
@@ -85,8 +83,6 @@ export default function Gallery() {
       sort: 'text',
       order: 'asc',
       name: query.name,
-      size: query.size,
-      woodType: query.woodType,
       hasPicture: 'true',
     })
       .then((data) => {
@@ -105,12 +101,6 @@ export default function Gallery() {
       })
     return () => { activeRequest = false }
   }, [query])
-
-  useEffect(() => {
-    fetchOptions(true)
-      .then((data) => setOptions({ sizes: data.sizes, woodTypes: data.woodTypes }))
-      .catch(() => {})
-  }, [])
 
   useEffect(() => {
     let activeRequest = true
@@ -136,18 +126,13 @@ export default function Gallery() {
     }
   }, [])
 
-  function setFilter(patch) {
-    setActive(null)
-    setQuery((prev) => ({ ...prev, ...patch, page: 1 }))
-  }
-
   function clearFilters() {
     setNameInput('')
     setActive(null)
-    setQuery({ page: 1, name: '', size: '', woodType: '' })
+    setQuery({ page: 1, name: '' })
   }
 
-  const filtersActive = Boolean(nameInput || query.size || query.woodType)
+  const filtersActive = Boolean(nameInput || query.name)
   const current = active == null ? null : pageData.items[active]
 
   function step(delta) {
@@ -206,7 +191,7 @@ export default function Gallery() {
 
       <Container id="galeria" maxWidth="lg" sx={{ mt: { xs: -4, md: -5 }, pb: 4, position: 'relative', zIndex: 1, scrollMarginTop: 16 }}>
         <Paper sx={{ p: 2, mb: 2 }}>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1.4fr 1fr 1fr' }, gap: 1.5 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr' }, gap: 1.5 }}>
             <TextField
               size="small"
               label="Nombre"
@@ -214,26 +199,6 @@ export default function Gallery() {
               value={nameInput}
               onChange={(event) => setNameInput(event.target.value)}
             />
-            <TextField
-              select
-              size="small"
-              label="Tamaño"
-              value={query.size}
-              onChange={(event) => setFilter({ size: event.target.value })}
-            >
-              <MenuItem value="">Todos</MenuItem>
-              {options.sizes.map((size) => <MenuItem key={size} value={size}>{size}</MenuItem>)}
-            </TextField>
-            <TextField
-              select
-              size="small"
-              label="Madera"
-              value={query.woodType}
-              onChange={(event) => setFilter({ woodType: event.target.value })}
-            >
-              <MenuItem value="">Todas</MenuItem>
-              {options.woodTypes.map((wood) => <MenuItem key={wood} value={wood}>{wood}</MenuItem>)}
-            </TextField>
           </Box>
           {filtersActive ? (
             <Button size="small" startIcon={<FilterAltOffIcon />} onClick={clearFilters} sx={{ mt: 1 }}>
