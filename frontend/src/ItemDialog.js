@@ -18,6 +18,8 @@ import {
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import CardGiftcardIcon from '@mui/icons-material/CardGiftcard'
+import CloseIcon from '@mui/icons-material/Close'
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import PersonRoundedIcon from '@mui/icons-material/PersonRounded'
 import { pictureSrc } from './api'
@@ -307,8 +309,8 @@ export default function ItemDialog({ open, mode, item, loading, saving, options,
         {mobileDetail ? null : <DialogActions sx={{ px: 3, pb: 2 }}>
           {readOnly ? (
             <>
-              <Button onClick={onClose}>Cerrar</Button>
-              <Button color="error" onClick={onDelete}>Eliminar</Button>
+              <Button onClick={onClose} startIcon={<CloseIcon />}>Cerrar</Button>
+              <Button color="error" onClick={onDelete} startIcon={<DeleteOutlineIcon />}>Eliminar</Button>
             </>
           ) : (
             <>
