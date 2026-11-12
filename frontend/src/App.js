@@ -58,6 +58,7 @@ import {
 } from './api'
 
 const COLUMNS = [
+  { id: 'id', label: 'Número', width: 76 },
   { id: 'dateCreated', label: 'Fecha de realización', minWidth: 150 },
   { id: 'text', label: 'Nombre', minWidth: 140 },
   { id: 'size', label: 'Tamaño', minWidth: 100 },
@@ -304,7 +305,7 @@ export default function App({ username, onLogout }) {
 
   return (
     <Box className="app-shell">
-      <Container maxWidth="lg" sx={{ py: 3 }}>
+      <Container maxWidth={false} sx={{ py: 3, px: { xs: 1, sm: 2, lg: 3 } }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, alignItems: 'flex-end', flexWrap: 'wrap', mb: 2.5 }}>
           <Box>
             <Typography variant="h4" component="h1">NombresMad</Typography>
@@ -418,13 +419,12 @@ export default function App({ username, onLogout }) {
                       )}
                     </TableCell>
                   ))}
-                  <TableCell className="actions-cell actions-wide">Acciones</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {!loading && pageData.items.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={COLUMNS.length + 2} sx={{ py: 6, textAlign: 'center', color: 'text.secondary' }}>
+                    <TableCell colSpan={COLUMNS.length + 1} sx={{ py: 6, textAlign: 'center', color: 'text.secondary' }}>
                       {filtersActive ? 'Ningún nombre coincide con los filtros.' : 'Todavía no hay nombres.'}
                     </TableCell>
                   </TableRow>
@@ -452,9 +452,6 @@ export default function App({ username, onLogout }) {
                         ) : cellText(item, column.id)}
                       </TableCell>
                     ))}
-                    <TableCell className="actions-cell actions-wide" onClick={(event) => event.stopPropagation()}>
-                      {actionButtons(item)}
-                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
