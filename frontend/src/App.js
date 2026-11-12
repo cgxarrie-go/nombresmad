@@ -58,13 +58,15 @@ import {
 } from './api'
 
 const COLUMNS = [
-  { id: 'id', label: 'Número', width: 76 },
-  { id: 'dateCreated', label: 'Fecha de creación', minWidth: 140 },
+  { id: 'dateCreated', label: 'Fecha de realización', minWidth: 150 },
   { id: 'text', label: 'Nombre', minWidth: 140 },
+  { id: 'size', label: 'Tamaño', minWidth: 100 },
+  { id: 'thicknesses', label: 'Grosor', minWidth: 100 },
+  { id: 'woodType', label: 'Tipo de madera', minWidth: 140 },
   { id: 'deliveredTo', label: 'Entregado a', minWidth: 140 },
   { id: 'group', label: 'Grupo', minWidth: 140 },
   { id: 'deliveryDate', label: 'Fecha de entrega', minWidth: 140 },
-  { id: 'price', label: 'Precio', width: 80, align: 'right' },
+  { id: 'price', label: 'Precio', width: 90, align: 'right' },
   { id: 'deliveredWithBox', label: 'Caja', width: 80 },
 ]
 
