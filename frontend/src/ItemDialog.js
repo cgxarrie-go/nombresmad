@@ -62,6 +62,18 @@ function validDate(value) {
   return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day
 }
 
+function dateInputValue(value) {
+  const match = DATE_RE.exec(String(value || ''))
+  if (!match || !validDate(value)) return ''
+  return `${match[3]}-${match[2]}-${match[1]}`
+}
+
+function storedDateValue(value) {
+  if (!value) return ''
+  const [year, month, day] = value.split('-')
+  return `${day}/${month}/${year}`
+}
+
 function displayValue(item, key) {
   if (key === 'deliveredWithBox') return item.deliveredWithBox ? 'Sí' : 'No'
   if (key === 'price') return item.price ?? 0
@@ -71,8 +83,8 @@ function displayValue(item, key) {
 
 const FIELDS = [
   { key: 'text', label: 'Nombre', required: true, full: true },
-  { key: 'dateCreated', label: 'Fecha de creación', placeholder: 'DD/MM/AAAA', date: true },
-  { key: 'deliveryDate', label: 'Fecha de entrega', placeholder: 'DD/MM/AAAA', date: true },
+  { key: 'dateCreated', label: 'Fecha de creación', date: true },
+  { key: 'deliveryDate', label: 'Fecha de entrega', date: true },
   { key: 'size', label: 'Tamaño' },
   { key: 'thicknesses', label: 'Grosor' },
   { key: 'woodType', label: 'Madera', kind: 'wood' },
@@ -273,16 +285,16 @@ export default function ItemDialog({ open, mode, item, loading, saving, options,
                       ) : (
                         <TextField
                           label={field.label}
-                          value={form[field.key] ?? ''}
-                          onChange={(e) => setField(field.key, e.target.value)}
+                          value={field.date ? dateInputValue(form[field.key]) : form[field.key] ?? ''}
+                          onChange={(e) => setField(field.key, field.date ? storedDateValue(e.target.value) : e.target.value)}
                           required={field.required}
-                          placeholder={field.placeholder}
                           size="small"
                           fullWidth
-                          type={field.kind === 'number' ? 'number' : 'text'}
+                          type={field.date ? 'date' : field.kind === 'number' ? 'number' : 'text'}
+                          InputLabelProps={field.date ? { shrink: true } : undefined}
                           inputProps={field.kind === 'number' ? { min: 0, step: 1 } : undefined}
                           error={Boolean(errors[field.key])}
-                          helperText={errors[field.key] || (field.date ? 'DD/MM/AAAA' : ' ')}
+                          helperText={errors[field.key] || ' '}
                         />
                       )}
                     </Grid>
