@@ -243,9 +243,8 @@ export default function Gallery() {
                     loading="lazy"
                     sx={{ display: 'block', width: '100%', aspectRatio: '4 / 3', objectFit: 'cover', bgcolor: 'action.hover' }}
                   />
-                  <Box sx={{ px: 1.5, py: 1.25, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 1 }}>
+                  <Box sx={{ px: 1.5, py: 1.25 }}>
                     <Typography variant="body2" sx={{ fontWeight: 700, minWidth: 0 }} noWrap>{item.text || '—'}</Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }} noWrap>{caption(item)}</Typography>
                   </Box>
                 </Paper>
               ))}

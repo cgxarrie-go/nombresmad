@@ -59,6 +59,7 @@ import {
 
 const COLUMNS = [
   { id: 'id', label: 'Número', width: 76 },
+  { id: 'picture', label: 'Foto', width: 64, sortable: false },
   { id: 'dateCreated', label: 'Fecha de realización', minWidth: 150 },
   { id: 'text', label: 'Nombre', minWidth: 140 },
   { id: 'size', label: 'Tamaño', minWidth: 100 },
