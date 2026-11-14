@@ -197,16 +197,23 @@ export default function App({ username, onLogout }) {
     try {
       const saved = editor.mode === 'create'
         ? await createItem(payload)
-        : await updateItem(editor.item.id, payload)
+        : await updateItem(editor.item.id, editor.mode === 'delivery'
+          ? { ...editor.item, ...payload }
+          : payload)
       try {
         if (picture?.file) {
           await uploadPicture(saved.id, picture.file)
         } else if (picture?.remove && editor.mode !== 'create') {
           await deletePicture(saved.id)
         }
-        notify('success', editor.mode === 'create' ? 'Nombre creado' : 'Cambios guardados')
+        notify('success', editor.mode === 'create' ? 'Nombre creado' : editor.mode === 'delivery' ? 'Entrega guardada' : 'Cambios guardados')
       } catch (err) {
         notify('error', `El nombre se guardó, pero no se pudo guardar la foto. ${errorMessage(err)}`)
+      }
+      if (editor.mode === 'delivery') {
+        setEditor({ mode: 'view', item: saved, loading: false })
+        refresh()
+        return
       }
       closeEditor()
       refresh()
@@ -542,8 +549,9 @@ export default function App({ username, onLogout }) {
         saving={saving}
         options={options}
         onClose={closeEditor}
-        onEdit={() => setEditor((current) => current && { ...current, mode: 'edit' })}
+        onEdit={(mode) => setEditor((current) => current && { ...current, mode: mode || 'edit' })}
         onDelete={() => editor?.item && askDelete(editor.item)}
+        onCancelDelivery={() => setEditor((current) => current && { ...current, mode: 'view' })}
         onSubmit={handleSave}
       />
 

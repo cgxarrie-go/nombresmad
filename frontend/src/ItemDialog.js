@@ -9,7 +9,11 @@ import {
   DialogContent,
   DialogTitle,
   FormControlLabel,
+  FormControl,
+  FormLabel,
   Grid,
+  Radio,
+  RadioGroup,
   Stack,
   Switch,
   TextField,
@@ -76,6 +80,12 @@ function storedDateValue(value) {
   return `${day}/${month}/${year}`
 }
 
+function todayValue() {
+  const now = new Date()
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`
+}
+
 function displayValue(item, key) {
   if (key === 'deliveredWithBox') return item.deliveredWithBox ? 'Sí' : 'No'
   if (key === 'price') return item.price ?? 0
@@ -121,6 +131,23 @@ function toPayload(form) {
   }
 }
 
+function toDeliveryPayload(form) {
+  return {
+    deliveredTo: String(form.deliveredTo || '').trim(),
+    deliveryDate: String(form.deliveryDate || '').trim(),
+    price: form.price === '' || form.price == null ? 0 : Number(form.price),
+    deliveredWithBox: Boolean(form.deliveredWithBox),
+  }
+}
+
+function validateDelivery(form) {
+  const errors = {}
+  if (!validDate(String(form.deliveryDate || '').trim())) errors.deliveryDate = 'Usa el formato DD/MM/AAAA'
+  const price = form.price === '' || form.price == null ? 0 : Number(form.price)
+  if (!Number.isInteger(price) || price < 0) errors.price = 'Introduce un número entero mayor o igual que 0'
+  return errors
+}
+
 function ChoiceField({ label, value, options, onChange, error, helperText }) {
   return (
     <Autocomplete
@@ -139,7 +166,7 @@ function ChoiceField({ label, value, options, onChange, error, helperText }) {
   )
 }
 
-export default function ItemDialog({ open, mode, item, loading, saving, options, onClose, onEdit, onDelete, onSubmit }) {
+export default function ItemDialog({ open, mode, item, loading, saving, options, onClose, onEdit, onDelete, onCancelDelivery, onSubmit }) {
   const [form, setForm] = useState(item || emptyItem())
   const [errors, setErrors] = useState({})
   const [pictureFile, setPictureFile] = useState(null)
@@ -150,7 +177,11 @@ export default function ItemDialog({ open, mode, item, loading, saving, options,
   const mobileDetail = mobile && readOnly
 
   useEffect(() => {
-    if (item) setForm(item)
+    if (item) {
+      setForm(mode === 'delivery' && !item.deliveryDate
+        ? { ...item, deliveryDate: todayValue() }
+        : item)
+    }
     setErrors({})
     setPictureFile(null)
     setRemovePicture(false)
@@ -163,12 +194,15 @@ export default function ItemDialog({ open, mode, item, loading, saving, options,
 
   function handleSubmit(event) {
     event.preventDefault()
-    const nextErrors = validate(form)
+    const nextErrors = mode === 'delivery' ? validateDelivery(form) : validate(form)
     const photoError = pictureFileError(pictureFile)
     setErrors(nextErrors)
     setPictureError(photoError)
     if (Object.keys(nextErrors).length > 0 || photoError) return
-    onSubmit(toPayload(form), { file: pictureFile, remove: removePicture && !pictureFile })
+    onSubmit(
+      mode === 'delivery' ? toDeliveryPayload(form) : toPayload(form),
+      mode === 'delivery' ? null : { file: pictureFile, remove: removePicture && !pictureFile }
+    )
   }
 
   function choosePicture(event) {
@@ -191,7 +225,7 @@ export default function ItemDialog({ open, mode, item, loading, saving, options,
     setPictureError('')
   }
 
-  const title = mode === 'create' ? 'Nuevo nombre' : mode === 'edit' ? 'Editar nombre' : 'Detalle del nombre'
+  const title = mode === 'create' ? 'Nuevo nombre' : mode === 'edit' ? 'Editar nombre' : mode === 'delivery' ? 'Entregar nombre' : 'Detalle del nombre'
 
   return (
     <Dialog
@@ -244,7 +278,7 @@ export default function ItemDialog({ open, mode, item, loading, saving, options,
             <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>Cargando…</Typography>
           ) : (
             <>
-              {mobileDetail ? (
+              {mode === 'delivery' ? null : mobileDetail ? (
                 <MobileDetails item={form} />
               ) : (
                 <PictureBlock
@@ -257,7 +291,58 @@ export default function ItemDialog({ open, mode, item, loading, saving, options,
                   onRemove={clearPicture}
                 />
               )}
-              {readOnly ? (
+              {mode === 'delivery' ? (
+                <Grid container spacing={1.5} sx={{ pt: 1 }}>
+                  <Grid item xs={12}>
+                    <TextField
+                      label="Entregado a"
+                      value={form.deliveredTo || ''}
+                      onChange={(e) => setField('deliveredTo', e.target.value)}
+                      size="small"
+                      fullWidth
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="Fecha de entrega"
+                      value={dateInputValue(form.deliveryDate)}
+                      onChange={(e) => setField('deliveryDate', storedDateValue(e.target.value))}
+                      size="small"
+                      fullWidth
+                      type="date"
+                      InputLabelProps={{ shrink: true }}
+                      error={Boolean(errors.deliveryDate)}
+                      helperText={errors.deliveryDate || ' '}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="Precio"
+                      value={form.price ?? 0}
+                      onChange={(e) => setField('price', e.target.value)}
+                      size="small"
+                      fullWidth
+                      type="number"
+                      inputProps={{ min: 0, step: 1 }}
+                      error={Boolean(errors.price)}
+                      helperText={errors.price || ' '}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <FormControl>
+                      <FormLabel>Caja</FormLabel>
+                      <RadioGroup
+                        row
+                        value={form.deliveredWithBox ? 'yes' : 'no'}
+                        onChange={(e) => setField('deliveredWithBox', e.target.value === 'yes')}
+                      >
+                        <FormControlLabel value="yes" control={<Radio />} label="Sí" />
+                        <FormControlLabel value="no" control={<Radio />} label="No" />
+                      </RadioGroup>
+                    </FormControl>
+                  </Grid>
+                </Grid>
+              ) : readOnly ? (
                 mobileDetail ? null : (
                   <Grid container spacing={2} sx={{ pt: 1 }}>
                     {FIELDS.map((field) => (
@@ -309,8 +394,16 @@ export default function ItemDialog({ open, mode, item, loading, saving, options,
         {mobileDetail ? null : <DialogActions sx={{ px: 3, pb: 2 }}>
           {readOnly ? (
             <>
+              <Button onClick={() => onEdit('delivery')} variant="contained" disabled={loading}>Entregar</Button>
               <Button onClick={onClose} startIcon={<CloseIcon />}>Cerrar</Button>
               <Button color="error" onClick={onDelete} startIcon={<DeleteOutlineIcon />}>Eliminar</Button>
+            </>
+          ) : mode === 'delivery' ? (
+            <>
+              <Button onClick={onCancelDelivery} disabled={saving}>Cancelar</Button>
+              <Button type="submit" variant="contained" disabled={saving || loading} startIcon={saving ? <CircularProgress size={16} color="inherit" /> : null}>
+                Guardar
+              </Button>
             </>
           ) : (
             <>
