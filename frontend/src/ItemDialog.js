@@ -394,7 +394,9 @@ export default function ItemDialog({ open, mode, item, loading, saving, options,
         {mobileDetail ? null : <DialogActions sx={{ px: 3, pb: 2 }}>
           {readOnly ? (
             <>
-              <Button onClick={() => onEdit('delivery')} variant="contained" disabled={loading}>Entregar</Button>
+              {!String(item?.deliveredTo || '').trim() ? (
+                <Button onClick={() => onEdit('delivery')} variant="contained" disabled={loading}>Entregar</Button>
+              ) : null}
               <Button onClick={onClose} startIcon={<CloseIcon />}>Cerrar</Button>
               <Button color="error" onClick={onDelete} startIcon={<DeleteOutlineIcon />}>Eliminar</Button>
             </>
