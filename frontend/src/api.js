@@ -124,8 +124,11 @@ export async function deletePicture(id) {
   return data
 }
 
-export async function importData() {
-  await api.post('/import')
+export async function importData(file) {
+  const { data } = await api.post('/import', file, {
+    headers: { 'Content-Type': 'application/json' },
+  })
+  return data
 }
 
 export async function fetchSession() {

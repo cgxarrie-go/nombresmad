@@ -55,12 +55,26 @@ func readNomadFile() (string, []model.Item, error) {
 	if err != nil {
 		return "", nil, fmt.Errorf("no se pudo leer %s: %w", path, err)
 	}
+	items, err := decodeNomadItems(data)
+	if err != nil {
+		return "", nil, fmt.Errorf("no se pudo interpretar %s: %w", path, err)
+	}
+	return path, items, nil
+}
+
+func decodeNomadItems(data []byte) ([]model.Item, error) {
 	var raw []nomadItem
 	if err := decodeJSON(data, &raw); err != nil {
-		return "", nil, fmt.Errorf("no se pudo interpretar %s: %w", path, err)
+		return nil, err
+	}
+	if raw == nil {
+		return nil, fmt.Errorf("el contenido debe ser una lista de elementos")
 	}
 	items := make([]model.Item, 0, len(raw))
 	for _, r := range raw {
+		if r.ID <= 0 {
+			return nil, fmt.Errorf("el número del elemento debe ser mayor que cero")
+		}
 		thickness := string(r.Thickness)
 		if thickness == "" {
 			thickness = string(r.Thicknesses)
@@ -79,7 +93,7 @@ func readNomadFile() (string, []model.Item, error) {
 			DeliveredWithBox: r.DeliveredWithBox,
 		})
 	}
-	return path, items, nil
+	return items, nil
 }
 
 func readMigrations() ([]byte, error) {

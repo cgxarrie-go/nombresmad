@@ -349,16 +349,25 @@
     "/api/import": {
       "post": {
         "tags": ["admin"],
-        "summary": "Reload items from initial_load.json",
+        "summary": "Import new items from a JSON file",
         "security": [{"Bearer": []}],
-        "description": "Replaces every row in items with the contents of initial_load.json and deletes stored pictures. Startup already loads that file when the table is empty.",
+        "description": "Adds items from the supplied JSON array when their ids are not already stored. Existing rows and pictures are left unchanged.",
+        "consumes": ["application/json"],
         "produces": ["application/json"],
+        "parameters": [{
+          "name": "body",
+          "in": "body",
+          "required": true,
+          "schema": {"type": "array", "items": {"$ref": "#/definitions/Item"}}
+        }],
         "responses": {
-          "200": {"description": "Imported", "schema": {"$ref": "#/definitions/Status"}},
+          "200": {"description": "Imported", "schema": {"type": "object", "properties": {"added": {"type": "integer", "description": "New items inserted"}, "skipped": {"type": "integer", "description": "Existing or duplicate ids not inserted"}}}},
+          "400": {"description": "Invalid JSON", "schema": {"type": "string"}},
           "401": {"description": "Not logged in", "schema": {"type": "string"}},
           "403": {"description": "Password change required", "schema": {"type": "string"}},
           "405": {"description": "Method not allowed", "schema": {"type": "string"}},
-          "500": {"description": "Read or database error", "schema": {"type": "string"}}
+          "413": {"description": "File exceeds 50 MB limit", "schema": {"type": "string"}},
+          "500": {"description": "Database error", "schema": {"type": "string"}}
         }
       }
     }

@@ -10,6 +10,7 @@ import (
 type catalogItems interface {
 	Count() (int, error)
 	Insert(items []model.Item, replace bool) error
+	InsertMissing(items []model.Item) (int, error)
 	Exec(query string) error
 	SyncIDSequence() error
 }
@@ -90,4 +91,20 @@ func (c *Catalog) Reload() (int, string, error) {
 		return 0, "", err
 	}
 	return len(items), path, nil
+}
+
+// Import adds items from the supplied JSON without changing existing ids.
+func (c *Catalog) Import(data []byte) (int, int, error) {
+	items, err := decodeNomadItems(data)
+	if err != nil {
+		return 0, 0, model.Invalid(fmt.Sprintf("no se pudo interpretar el archivo: %v", err))
+	}
+	added, err := c.items.InsertMissing(items)
+	if err != nil {
+		return 0, 0, err
+	}
+	if err := c.items.SyncIDSequence(); err != nil {
+		return 0, 0, err
+	}
+	return added, len(items) - added, nil
 }

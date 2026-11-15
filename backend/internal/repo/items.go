@@ -217,6 +217,36 @@ func (r *ItemRepo) Insert(items []model.Item, replace bool) error {
 	return tx.Commit()
 }
 
+// InsertMissing adds items whose ids are not already stored.
+func (r *ItemRepo) InsertMissing(items []model.Item) (int, error) {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	stmt, err := tx.Prepare(`INSERT INTO items(id, dateCreated, text, size, thicknesses, woodType, deliveryDate, deliveredTo, "group", price, deliveredWithBox) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) ON CONFLICT (id) DO NOTHING`)
+	if err != nil {
+		return 0, err
+	}
+	defer stmt.Close()
+	added := 0
+	for _, it := range items {
+		result, err := stmt.Exec(it.ID, it.DateCreated, it.Text, it.Size, it.Thicknesses, it.WoodType, it.DeliveryDate, it.DeliveredTo, it.Group, it.Price, it.DeliveredWithBox)
+		if err != nil {
+			return 0, fmt.Errorf("no se pudo insertar el id %d: %w", it.ID, err)
+		}
+		inserted, err := result.RowsAffected()
+		if err != nil {
+			return 0, err
+		}
+		added += int(inserted)
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return added, nil
+}
+
 // Exec runs a SQL script, used for migrations.
 func (r *ItemRepo) Exec(query string) error {
 	_, err := r.db.Exec(query)

@@ -104,8 +104,10 @@ export default function App({ username, onLogout }) {
   const [confirming, setConfirming] = useState(false)
   const [menuAnchor, setMenuAnchor] = useState(null)
   const [adminsOpen, setAdminsOpen] = useState(false)
+  const [importing, setImporting] = useState(false)
   const [snack, setSnack] = useState({ open: false, message: '', severity: 'success' })
   const openSeq = useRef(0)
+  const importInput = useRef(null)
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -244,17 +246,23 @@ export default function App({ username, onLogout }) {
 
   function askImport() {
     setMenuAnchor(null)
-    setConfirm({
-      title: 'Importar initial_load.json',
-      body: 'Se reemplazarán todos los nombres con el contenido de initial_load.json. Las fotos guardadas se eliminarán.',
-      confirmLabel: 'Importar',
-      danger: true,
-      run: async () => {
-        await importData()
-        notify('success', 'Datos importados')
-        refresh()
-      },
-    })
+    importInput.current?.click()
+  }
+
+  async function handleImportFile(event) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    setImporting(true)
+    try {
+      const result = await importData(file)
+      notify('success', `Importación completada: ${result.added} añadidos, ${result.skipped} no añadidos`)
+      refresh()
+    } catch (err) {
+      notify('error', errorMessage(err))
+    } finally {
+      setImporting(false)
+    }
   }
 
   async function runConfirm() {
@@ -327,8 +335,15 @@ export default function App({ username, onLogout }) {
           </Stack>
           <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={() => setMenuAnchor(null)}>
             <MenuItem onClick={() => { setMenuAnchor(null); setAdminsOpen(true) }}>Administradores</MenuItem>
-            <MenuItem onClick={askImport}>Importar initial_load.json</MenuItem>
+            <MenuItem onClick={askImport} disabled={importing}>{importing ? 'Importando…' : 'Importar initial_load.json'}</MenuItem>
           </Menu>
+          <input
+            ref={importInput}
+            type="file"
+            accept=".json,application/json"
+            hidden
+            onChange={handleImportFile}
+          />
         </Box>
 
         <Paper sx={{ p: 2, mb: 2 }}>
