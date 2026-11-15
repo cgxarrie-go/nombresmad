@@ -128,10 +128,6 @@ export async function importData() {
   await api.post('/import')
 }
 
-export async function migrateDb() {
-  await api.post('/migrate')
-}
-
 export async function fetchSession() {
   if (!getToken()) {
     const error = new Error('unauthorized')

@@ -36,7 +36,6 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/items/", withCORS(s.item))
 	mux.HandleFunc("/api/options", withCORS(s.options))
 	mux.HandleFunc("/api/import", withCORS(s.importNomad))
-	mux.HandleFunc("/api/migrate", withCORS(s.migrate))
 	registerSwagger(mux)
 	return mux
 }

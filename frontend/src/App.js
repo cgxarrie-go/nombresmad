@@ -51,7 +51,6 @@ import {
   fetchItems,
   fetchOptions,
   importData,
-  migrateDb,
   pictureSrc,
   updateItem,
   uploadPicture,
@@ -258,16 +257,6 @@ export default function App({ username, onLogout }) {
     })
   }
 
-  async function runMigrate() {
-    setMenuAnchor(null)
-    try {
-      await migrateDb()
-      notify('success', 'Base de datos actualizada')
-    } catch (err) {
-      notify('error', errorMessage(err))
-    }
-  }
-
   async function runConfirm() {
     if (!confirm) return
     setConfirming(true)
@@ -338,7 +327,6 @@ export default function App({ username, onLogout }) {
           </Stack>
           <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={() => setMenuAnchor(null)}>
             <MenuItem onClick={() => { setMenuAnchor(null); setAdminsOpen(true) }}>Administradores</MenuItem>
-            <MenuItem onClick={runMigrate}>Actualizar base de datos</MenuItem>
             <MenuItem onClick={askImport}>Importar initial_load.json</MenuItem>
           </Menu>
         </Box>

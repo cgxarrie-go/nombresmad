@@ -361,22 +361,6 @@
           "500": {"description": "Read or database error", "schema": {"type": "string"}}
         }
       }
-    },
-    "/api/migrate": {
-      "post": {
-        "tags": ["admin"],
-        "summary": "Apply migrations.sql",
-        "security": [{"Bearer": []}],
-        "description": "Runs migrations.sql. Startup already applies it.",
-        "produces": ["application/json"],
-        "responses": {
-          "200": {"description": "Migrated", "schema": {"$ref": "#/definitions/Status"}},
-          "401": {"description": "Not logged in", "schema": {"type": "string"}},
-          "403": {"description": "Password change required", "schema": {"type": "string"}},
-          "405": {"description": "Method not allowed", "schema": {"type": "string"}},
-          "500": {"description": "Migration error", "schema": {"type": "string"}}
-        }
-      }
     }
   },
   "parameters": {
