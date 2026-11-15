@@ -30,6 +30,8 @@ import {
   DialogTitle,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import FilterAltOffIcon from '@mui/icons-material/FilterAltOff'
@@ -78,6 +80,64 @@ function cellText(item, column) {
   if (column === 'price') return item.price ?? 0
   const value = item[column]
   return value === '' || value == null ? '—' : value
+}
+
+function PaginationActions({ page, onPageChange, count, rowsPerPage }) {
+  const pageCount = Math.max(1, Math.ceil(count / rowsPerPage))
+  const [pageInput, setPageInput] = useState(String(page + 1))
+
+  useEffect(() => {
+    setPageInput(String(page + 1))
+  }, [page])
+
+  function goToPage() {
+    const requestedPage = Number(pageInput)
+    if (!Number.isInteger(requestedPage) || requestedPage < 1) {
+      setPageInput(String(page + 1))
+      return
+    }
+
+    const nextPage = Math.min(requestedPage, pageCount)
+    setPageInput(String(nextPage))
+    if (nextPage !== page + 1) onPageChange(null, nextPage - 1)
+  }
+
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
+      <TextField
+        size="small"
+        type="number"
+        label="Página"
+        value={pageInput}
+        onChange={(event) => setPageInput(event.target.value)}
+        onBlur={goToPage}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            goToPage()
+            event.currentTarget.blur()
+          }
+        }}
+        inputProps={{ min: 1, max: pageCount, 'aria-label': 'Número de página' }}
+        sx={{ width: 90, mr: 1 }}
+      />
+      <IconButton
+        onClick={(event) => onPageChange(event, page - 1)}
+        disabled={page === 0}
+        aria-label="Página anterior"
+        size="small"
+      >
+        <ChevronLeftIcon />
+      </IconButton>
+      <IconButton
+        onClick={(event) => onPageChange(event, page + 1)}
+        disabled={page >= pageCount - 1}
+        aria-label="Página siguiente"
+        size="small"
+      >
+        <ChevronRightIcon />
+      </IconButton>
+    </Box>
+  )
 }
 
 export default function App({ username, onLogout }) {
@@ -539,6 +599,7 @@ export default function App({ username, onLogout }) {
             onPageChange={(_, page) => setQuery((prev) => ({ ...prev, page: page + 1 }))}
             rowsPerPage={PAGE_SIZE}
             rowsPerPageOptions={[PAGE_SIZE]}
+            ActionsComponent={PaginationActions}
             labelRowsPerPage="Por página"
             labelDisplayedRows={({ from: rowFrom, to: rowTo, count }) => `${rowFrom}–${rowTo} de ${count}`}
           />
